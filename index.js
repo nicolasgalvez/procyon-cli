@@ -15,10 +15,10 @@ const log = (argv, message) => {
 }
 
 const argv = yargs(process.argv.slice(2)) // eslint-disable-line no-unused-vars
-  .scriptName('procyon-cli')
+  .scriptName('procyon')
   .option('config', {
     description: 'Path to the config file',
-    default: 'config/procyon-config.yml',
+    default: 'config/procyon-config.json',
     alias: 'c',
     type: 'string'
   })
@@ -35,7 +35,7 @@ const argv = yargs(process.argv.slice(2)) // eslint-disable-line no-unused-vars
   })
   .middleware(loadEnvMiddleware) // Load the .env file and make it available in modules.
   .middleware(checkEnvKeysMiddleware) // Check required keys in .env file
-  .middleware(loadConfig) // Load the .env file and make it available in modules.
+  .middleware(loadConfig) // Load the config file and make it available in modules.
   .commandDir('commands') // Load commands from the `commands` directory
   .demandCommand(1, '')
   .help()
@@ -62,7 +62,6 @@ function loadEnvMiddleware (argv) {
  */
 function loadConfig (argv) {
   const configPath = path.resolve(process.cwd(), argv.config)
-
   if (fs.existsSync(configPath)) {
     log(argv, `Loading config from ${configPath}`)
     const config = require(configPath)
