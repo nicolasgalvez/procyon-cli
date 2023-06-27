@@ -1,10 +1,10 @@
 {
-  "name": "procyon-wordpress-tools",
+  "name": "procyon-cli",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "bin": {
-    "ilwrath-crawl": "./index.js"
+    "procyon": "./index.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -13,6 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "csv-writer": "^1.6.0",
+    "dotenv": "^16.3.1",
     "yargs": "^17.7.2"
   }
 }
