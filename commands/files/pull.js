@@ -25,6 +25,8 @@ module.exports = {
     },
     handler: (argv) => {
         console.log(process.env.SITE_NAME) // This is available because of the loadEnvMiddleware
+        let command  = `ssh ${argv.env} "cd ${argv.remotePath} && pwd && ls -la"`
+
         exec('ls -la', (error, stdout, stderr) => {
             if (error) {
                 console.log(`error: ${error.message}`)

@@ -7,6 +7,7 @@ const yargs = require('yargs');
 const template = `
 {
   "projectName": "{{projectName}}",
+  "localWP": "{{localWP}}",
   "inventory": {
     "environments": [
       {{#each environments}}
@@ -36,6 +37,13 @@ module.exports = {
                 type: 'input',
                 name: 'projectName',
                 message: 'Enter the project name:'
+            },
+            {
+                type: 'input',
+                name: 'localWP',
+                message: 'Do you use vanilla wp cli or lando wp?:',
+                initial: 'lando',
+                choices: ['wp', 'lando wp']
             }
         ]);
 
