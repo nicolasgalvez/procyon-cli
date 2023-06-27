@@ -1,0 +1,13 @@
+
+{
+  "projectName": "test",
+  "inventory": {
+    "environments": [
+      {
+        "name": "staging",
+        "ssh": "staging-codebusters.kinsta.cloud",
+        "path": "public"
+      }
+    ]
+  }
+}
