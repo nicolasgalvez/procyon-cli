@@ -1,5 +1,5 @@
 const { exec } = require('child_process')
-
+const test
 module.exports = {
   command: 'ls [dir]',
   describe: 'List files in the current directory. A simple command to help me learn yargs.',
