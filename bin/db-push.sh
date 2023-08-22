@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # Pushes database.
 
-. bin/inc/loader.sh
-. bin/inc/arg_environment.sh
+
 
 # Technically we shouldn't push to live but it happens. You can comment this out if needed.
 if [ "$REMOTE_DOMAIN" == "$LIVE_DOMAIN" ]; then
@@ -13,7 +12,7 @@ fi
 set -x
 
 
-$WP db export db.sql --exclude_tables=wp_users
+$WP db export db.sql
 
 rsync -chavzP --stats  db.sql "$REMOTE_SSH":db.sql
 

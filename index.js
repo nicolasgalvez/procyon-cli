@@ -3,6 +3,7 @@ const yargs = require('yargs/yargs')
 const dotenv = require('dotenv')
 const path = require('path')
 const fs = require('fs')
+// const { join } = require('path')
 
 /**
  * Log a message if verbose logging is enabled
@@ -53,6 +54,9 @@ function loadEnvMiddleware (argv) {
     process.exit(1)
   }
   dotenv.config({ path: envPath })
+
+  process.env.ROOT_PATH = __dirname
+
   return argv
 }
 
@@ -86,7 +90,6 @@ function checkEnvKeysMiddleware (argv) {
     'LOCAL_DOMAIN',
     'STAGING_SSH',
     'LIVE_SSH',
-    'REMOTE_PATH',
     'STAGING_PATH',
     'LIVE_PATH',
     'LOCAL_PATH'
@@ -100,5 +103,19 @@ function checkEnvKeysMiddleware (argv) {
     process.exit(1)
   }
 
+  // Set up required keys
+  // TODO: refactor to use a config file to support multiple named environments
+  process.env.TARGET_ENV = argv.target
+  console.log(argv.target)
+  if (argv.target === 'live') {
+    process.env.REMOTE_SSH = process.env.LIVE_SSH
+    process.env.REMOTE_DOMAIN = process.env.LIVE_DOMAIN
+    process.env.REMOTE_PATH = process.env.LIVE_PATH
+  }
+  if (argv.target === 'staging') {
+    process.env.REMOTE_SSH = process.env.STAGING_SSH
+    process.env.REMOTE_DOMAIN = process.env.STAGING_DOMAIN
+    process.env.REMOTE_PATH = process.env.STAGING_PATH
+  }
   return argv
 }

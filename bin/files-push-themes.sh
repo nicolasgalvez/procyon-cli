@@ -4,15 +4,16 @@
 set -e
 ## This file pulls the uploads folder down from the remote server into localhost.
 
-. bin/inc/loader.sh
-. bin/inc/arg_environment.sh
 
 
 
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+#echo $SCRIPT_DIR;
 # echo "Pulling plugins"
-#rsync -chavzP --stats $REMOTE_DOMAIN:$REMOTE_PATH/wp-content/plugins/ public/wp-content/plugins/
+#rsync -chavzP --stats $REMOTE_DOMAIN:$REMOTE_PATH/wp-content/plugins/ "$LOCAL_PATH/wp-content/plugins/"
 echo "Pushing themes"
-rsync -chavzP --stats --exclude-from='bin/rsync-exclude'  public/wp-content/themes/ $REMOTE_DOMAIN:$REMOTE_PATH/wp-content/themes/
+rsync -chavzP --stats --exclude-from="$SCRIPT_DIR/../bin/rsync-exclude"  "$LOCAL_PATH/wp-content/themes/" $REMOTE_DOMAIN:$REMOTE_PATH/wp-content/themes/
 #
 #echo "Pulling uploads"
-#rsync -chavzP --stats --exclude-from='bin/rsync-exclude' $REMOTE_DOMAIN:$REMOTE_PATH/wp-content/uploads/ public/wp-content/uploads/
+#rsync -chavzP --stats --exclude-from="$ROOT_PATH/bin/rsync-exclude" $REMOTE_DOMAIN:$REMOTE_PATH/wp-content/uploads/ "$LOCAL_PATH/wp-content/uploads/"
