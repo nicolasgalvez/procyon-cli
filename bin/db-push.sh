@@ -4,16 +4,16 @@
 
 
 # Technically we shouldn't push to live but it happens. You can comment this out if needed.
-if [ "$REMOTE_DOMAIN" == "$LIVE_DOMAIN" ]; then
-	echo "No pushing to live";
-	exit;
-fi
+#if [ "$REMOTE_DOMAIN" == "$LIVE_DOMAIN" ]; then
+#	echo "No pushing to live";
+#	exit;
+#fi
 
 set -x
 
 
 $WP db export db.sql
-
+exit;
 rsync -chavzP --stats  db.sql "$REMOTE_SSH":db.sql
 
 # Make a backup of the database in home folder

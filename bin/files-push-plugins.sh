@@ -38,8 +38,12 @@ fi
 ## Backup remote plugins
 ssh $REMOTE_DOMAIN -C "zip -r plugins.tgz $REMOTE_PLUGIN_PATH"
 
+wp --ssh="$REMOTE_DOMAIN" --path="$REMOTE_PATH" core maintenance-mode activate
+
 ## Delete remote plugins
 ssh $REMOTE_DOMAIN -C "rm -rf $REMOTE_PLUGIN_PATH/*"
 
 ## Push local plugins
 rsync -chavP --stats "$LOCAL_PLUGIN_PATH/" $REMOTE_DOMAIN:$REMOTE_PLUGIN_PATH/
+
+wp --ssh="$REMOTE_DOMAIN" --path="$REMOTE_PATH" core maintenance-mode deactivate

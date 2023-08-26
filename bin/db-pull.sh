@@ -25,8 +25,9 @@ rsync -chavzP --stats $REMOTE_SSH:"$EXPORT_PATH"db.sql db.sql
 
 mkdir -p .tmp
 cd .tmp
-lando wp db export
+$WP db export db.sql
 cd ..
-lando wp db import db.sql
-lando wp search-replace $REMOTE_DOMAIN $LOCAL_DOMAIN
+$WP db import db.sql
+$WP search-replace $REMOTE_DOMAIN $LOCAL_DOMAIN
+$WP transient delete --all
 rm db.sql
