@@ -106,6 +106,9 @@ function checkEnvKeysMiddleware (argv) {
   // Set up required keys
   // TODO: refactor to use a config file to support multiple named environments
   process.env.TARGET_ENV = argv.target
+  process.env.STACK='localwp'
+  process.env.WP='wp'
+  
   console.log(argv.target)
   if (argv.target === 'live') {
     process.env.REMOTE_SSH = process.env.LIVE_SSH
@@ -117,5 +120,11 @@ function checkEnvKeysMiddleware (argv) {
     process.env.REMOTE_DOMAIN = process.env.STAGING_DOMAIN
     process.env.REMOTE_PATH = process.env.STAGING_PATH
   }
+  if (process.env.LOCAL_DOMAIN.includes('lndo')) {
+    console.log('Local environment detected: Lando')
+    process.env.STACK='lando'
+    process.env.WP='lando wp'
+  }
+  
   return argv
 }

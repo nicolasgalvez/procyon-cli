@@ -15,3 +15,14 @@ else
   echo "What site to download? [live|staging]"
   exit 1
 fi
+
+STACK='localwp'
+WP='wp'
+
+if [[ $LOCAL_DOMAIN == *"lndo"* ]]; then
+	echo "Looks like lando"
+	STACK='lando'
+	WP='lando wp'
+	export STACK;
+	export WP;
+fi
