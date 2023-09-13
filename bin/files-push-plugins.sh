@@ -6,7 +6,7 @@ set -e
 
 set -x
 # Make sure paths exist
-mkdir -p "$LOCAL_PATH"/../.tmp/plugins-old
+mkdir -p "$LOCAL_PATH"/../../.tmp/plugins-old
 mkdir -p public/wp-content/plugins
 
 # Check if single directory is targeted
