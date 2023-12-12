@@ -16,3 +16,4 @@ wp-config.php
 .htaccess
 .git
 /node_modules/
+Divi/

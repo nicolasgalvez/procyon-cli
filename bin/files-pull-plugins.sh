@@ -7,10 +7,11 @@ set -e
 
 
 set -x
-mkdir -p $LOCAL_PATH/.tmp/plugins-old
+mkdir -p $LOCAL_PATH/../.tmp/plugins-old
 mkdir -p "$LOCAL_PATH/wp-content/plugins/"
 
 #rsync -chavzP --stats --exclude-from="$ROOT_PATH/bin/rsync-exclude" $REMOTE_DOMAIN:$REMOTE_PATH/wp-content/themes/ "$LOCAL_PATH/wp-content/themes/"
-rsync -havzP "$LOCAL_PATH/wp-content/plugins/" $LOCAL_PATH/.tmp/plugins-old/
+rsync -havzP "$LOCAL_PATH/wp-content/plugins/" $LOCAL_PATH/../.tmp/plugins-old/
+rm -rf "$LOCAL_PATH/wp-content/plugins/"
 rsync -havzP --stats $REMOTE_DOMAIN:$REMOTE_PATH/wp-content/plugins/ "$LOCAL_PATH/wp-content/plugins/"
 #rsync -chavzP --stats --exclude-from="$ROOT_PATH/bin/rsync-exclude" $REMOTE_DOMAIN:$REMOTE_PATH/wp-content/uploads/ "$LOCAL_PATH/wp-content/uploads/"
