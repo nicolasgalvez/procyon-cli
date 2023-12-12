@@ -28,6 +28,6 @@ cd .tmp
 $WP db export db.sql
 cd ..
 $WP db import db.sql
-$WP search-replace $REMOTE_DOMAIN $LOCAL_DOMAIN
+$WP search-replace --all-tables $REMOTE_DOMAIN $LOCAL_DOMAIN
 $WP transient delete --all
 rm db.sql

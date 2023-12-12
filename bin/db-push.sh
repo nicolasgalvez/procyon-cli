@@ -21,7 +21,7 @@ wp --ssh="$REMOTE_SSH" --path="$REMOTE_PATH" db export
 # Import the local database
 
 wp --ssh="$REMOTE_SSH" --path="$REMOTE_PATH" db import db.sql
-wp --ssh="$REMOTE_SSH" --path="$REMOTE_PATH" search-replace "$LOCAL_DOMAIN" "$REMOTE_DOMAIN"
+wp --ssh="$REMOTE_SSH" --path="$REMOTE_PATH" search-replace --all-tables "$LOCAL_DOMAIN" "$REMOTE_DOMAIN"
 
 # Workaround for the autoload proxy saving fake urls on local
 # wp --ssh="$REMOTE_SSH" --path="$REMOTE_PATH" search-replace "localhost:3000" "$REMOTE_DOMAIN"
