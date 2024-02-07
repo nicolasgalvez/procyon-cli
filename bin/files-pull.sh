@@ -14,4 +14,4 @@ set -e
 #rsync -chavzP --stats --exclude-from="$ROOT_PATH/bin/rsync-exclude" $REMOTE_DOMAIN:$REMOTE_PATH/wp-content/themes/ "$LOCAL_PATH/wp-content/themes/"
 #
 echo "Pulling uploads"
-rsync -chavzP --stats --exclude-from="$ROOT_PATH/bin/rsync-exclude" $REMOTE_DOMAIN:$REMOTE_PATH/wp-content/uploads/ "$LOCAL_PATH/wp-content/uploads/"
+rsync -chavzP --stats --exclude-from="$ROOT_PATH/bin/rsync-exclude" $REMOTE_SSH:$REMOTE_PATH/wp-content/uploads/ "$LOCAL_PATH/wp-content/uploads/"

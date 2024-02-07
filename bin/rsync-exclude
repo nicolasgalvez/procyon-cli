@@ -1,5 +1,8 @@
 *.zip
+*.tgz
+*.gz
 *.sql
+*.sqlite
 *.tar*
 *.log
 wp-content/cache/
@@ -15,5 +18,16 @@ wp-content/sucuri
 wp-config.php
 .htaccess
 .git
-/node_modules/
+node_modules/
 Divi/
+.cache/
+.DS_Store
+.AppleDouble
+.LSOverride
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent

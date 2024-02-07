@@ -13,7 +13,6 @@ set -x
 
 
 $WP db export db.sql
-exit;
 rsync -chavzP --stats  db.sql "$REMOTE_SSH":db.sql
 
 # Make a backup of the database in home folder

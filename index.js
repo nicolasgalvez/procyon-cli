@@ -109,7 +109,7 @@ function checkEnvKeysMiddleware (argv) {
   process.env.STACK = 'localwp'
   process.env.WP = 'wp'
 
-  console.log(argv.target)
+  // console.log(argv.target)
   if (argv.target === 'live') {
     process.env.REMOTE_SSH = process.env.LIVE_SSH
     process.env.REMOTE_DOMAIN = process.env.LIVE_DOMAIN
