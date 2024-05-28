@@ -5,7 +5,7 @@ const { execSync } = require('child_process')
 // Function to execute WP-CLI command
 function installPlugin (name, version, isActive) {
   let command = `wp --ssh="${process.env.REMOTE_SSH}" plugin install "${name}" --version="${version}" --force`
-  
+
   if (isActive) {
     command += ' --activate'
   }
