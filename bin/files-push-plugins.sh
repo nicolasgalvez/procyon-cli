@@ -6,8 +6,8 @@ set -e
 
 set -x
 # Make sure paths exist
-mkdir -p "$LOCAL_PATH"/../../.tmp/plugins-old
-mkdir -p public/wp-content/plugins
+mkdir -p /tmp/plugins-old
+mkdir -p "$LOCAL_PATH/wp-content/plugins"
 
 # Check if single directory is targeted
 SINGLE_DIR=""
@@ -45,5 +45,6 @@ ssh $REMOTE_DOMAIN -C "rm -rf $REMOTE_PLUGIN_PATH/*"
 
 ## Push local plugins
 rsync -chavP --stats "$LOCAL_PLUGIN_PATH/" $REMOTE_DOMAIN:$REMOTE_PLUGIN_PATH/
+rsync -chavP --stats "$LOCAL_PATH/wp-content/mu-plugins/" $REMOTE_DOMAIN:"$REMOTE_PATH/wp-content/mu-plugins/"
 
 #wp --ssh="$REMOTE_DOMAIN" --path="$REMOTE_PATH" core maintenance-mode deactivate
