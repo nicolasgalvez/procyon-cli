@@ -9,7 +9,7 @@
 #	exit;
 #fi
 
-set -x
+set -e
 
 
 $WP db export db.sql

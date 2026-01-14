@@ -2,16 +2,20 @@ const fs = require('fs')
 const csv = require('csv-parser')
 const { execSync } = require('child_process')
 
+const WP_COMMAND = process.env.WP || 'lando wp'
+
+console.log(process.env)
 // Function to execute WP-CLI command
 function installPlugin (name, version, isActive) {
-  let command = `wp --ssh="${process.env.REMOTE_SSH}" plugin install "${name}" --version="${version}" --force`
-
+  let command = `${WP_COMMAND} plugin install "${name}" --version="${version}" --force`
+  console.log(command)
   if (isActive) {
     command += ' --activate'
   }
 
   try {
     const output = execSync(command, { stdio: 'pipe' }).toString()
+    console.log(command)
     if (output.includes('Success')) {
       return `Success,${name},${version}`
     } else {
