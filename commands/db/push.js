@@ -1,5 +1,6 @@
-const { spawn } = require('child_process');
-const { prompt } = require('enquirer');
+const { spawn } = require('child_process')
+const path = require('path')
+const { prompt } = require('enquirer')
 
 module.exports = {
   command: 'push <target> [--remote-url] [--local-url] [-y]',
@@ -14,34 +15,34 @@ module.exports = {
     'local-url': {
       default: 'public'
     },
-    'y': {
+    y: {
       describe: 'Skip confirmation prompt',
       type: 'boolean'
     }
   },
   handler: (argv) => {
-    console.log(process.env.SITE_NAME); // This is available because of the loadEnvMiddleware
+    console.log(process.env.SITE_NAME) // This is available because of the loadEnvMiddleware
 
     const executeCommand = () => {
-      let command = `${__dirname}/../../bin/db-push.sh`;
+      const command = path.join(__dirname, '../../bin/db-push.sh')
 
-      let child = spawn(command, [argv.target], {
+      const child = spawn(command, [argv.target], {
         stdio: 'inherit'
-      });
+      })
 
       child.on('error', (error) => {
-        console.log(`error: ${error.message}`);
-      });
+        console.log(`error: ${error.message}`)
+      })
 
       child.on('close', (code) => {
         if (code !== 0) {
-          console.log(`Process exited with code ${code}`);
+          console.log(`Process exited with code ${code}`)
         }
-      });
-    };
+      })
+    }
 
     if (argv.y) {
-      executeCommand();
+      executeCommand()
     } else {
       prompt({
         type: 'confirm',
@@ -50,14 +51,14 @@ module.exports = {
       })
         .then(({ confirm }) => {
           if (confirm) {
-            executeCommand();
+            executeCommand()
           } else {
-            console.log('Operation cancelled by the user.');
+            console.log('Operation cancelled by the user.')
           }
         })
         .catch((error) => {
-          console.error('An error occurred during the prompt:', error);
-        });
+          console.error('An error occurred during the prompt:', error)
+        })
     }
   }
 }

@@ -161,3 +161,4 @@ Temporary Items
 *.csv
 
 config/procyon-config.json
+.procyon

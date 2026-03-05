@@ -4,7 +4,6 @@ const { execSync } = require('child_process')
 
 const WP_COMMAND = process.env.WP || 'lando wp'
 
-console.log(process.env)
 // Function to execute WP-CLI command
 function installPlugin (name, version, isActive) {
   let command = `${WP_COMMAND} plugin install "${name}" --version="${version}" --force`
