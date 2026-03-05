@@ -141,5 +141,30 @@ describe('config store', () => {
       expect(process.env.WP).toBe('wp')
       expect(process.env.STACK).toBe('localwp')
     })
+
+    it('sets LOCAL_DOMAIN from localDomain', () => {
+      store.toEnv({ ...validConfig, localDomain: 'mysite.local' }, 'staging')
+      expect(process.env.LOCAL_DOMAIN).toBe('mysite.local')
+    })
+
+    it('uses env domain for REMOTE_DOMAIN when available', () => {
+      const config = {
+        ...validConfig,
+        environments: {
+          staging: {
+            ...validConfig.environments.staging,
+            domain: 'staging.example.com'
+          }
+        }
+      }
+      store.toEnv(config, 'staging')
+      expect(process.env.REMOTE_DOMAIN).toBe('staging.example.com')
+      expect(process.env.STAGING_DOMAIN).toBe('staging.example.com')
+    })
+
+    it('falls back to user@host for REMOTE_DOMAIN when no domain set', () => {
+      store.toEnv(validConfig, 'staging')
+      expect(process.env.REMOTE_DOMAIN).toBe('deploy@staging.example.com')
+    })
   })
 })

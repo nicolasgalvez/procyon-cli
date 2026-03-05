@@ -51,6 +51,7 @@ module.exports = {
     const config = {
       name: projectName,
       localPath: envConfig.LOCAL_PATH,
+      localDomain: envConfig.LOCAL_DOMAIN || undefined,
       wpCli: envConfig.LOCAL_DOMAIN?.includes('lndo') ? 'lando wp' : 'wp',
       environments: {}
     }
@@ -58,6 +59,9 @@ module.exports = {
     if (envConfig.STAGING_SSH) {
       config.environments.staging = parseSSHString(envConfig.STAGING_SSH)
       config.environments.staging.path = envConfig.STAGING_PATH
+      if (envConfig.STAGING_DOMAIN) {
+        config.environments.staging.domain = envConfig.STAGING_DOMAIN
+      }
       const s = config.environments.staging
       console.log(`  staging: ${envConfig.STAGING_SSH} -> host: ${s.host}, user: ${s.user}, port: ${s.port}`)
     }
@@ -65,6 +69,9 @@ module.exports = {
     if (envConfig.LIVE_SSH) {
       config.environments.live = parseSSHString(envConfig.LIVE_SSH)
       config.environments.live.path = envConfig.LIVE_PATH
+      if (envConfig.LIVE_DOMAIN) {
+        config.environments.live.domain = envConfig.LIVE_DOMAIN
+      }
       const l = config.environments.live
       console.log(`  live: ${envConfig.LIVE_SSH} -> host: ${l.host}, user: ${l.user}, port: ${l.port}`)
     }

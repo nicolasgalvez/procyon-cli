@@ -45,6 +45,13 @@ module.exports = {
       initial: process.cwd()
     })
 
+    const { localDomain } = await prompt({
+      type: 'input',
+      name: 'localDomain',
+      message: 'Local domain (for db search-replace):',
+      initial: ''
+    })
+
     const { wpCli } = await prompt({
       type: 'select',
       name: 'wpCli',
@@ -97,6 +104,12 @@ module.exports = {
         },
         {
           type: 'input',
+          name: 'domain',
+          message: 'Site domain (for db search-replace):',
+          initial: ''
+        },
+        {
+          type: 'input',
           name: 'identityFile',
           message: 'SSH identity file (leave blank for default):'
         }
@@ -109,6 +122,9 @@ module.exports = {
         path: envAnswers.remotePath
       }
 
+      if (envAnswers.domain) {
+        env.domain = envAnswers.domain
+      }
       if (envAnswers.identityFile) {
         env.identityFile = envAnswers.identityFile
       }
@@ -121,6 +137,10 @@ module.exports = {
       localPath,
       wpCli,
       environments
+    }
+
+    if (localDomain) {
+      config.localDomain = localDomain
     }
 
     const configPath = saveProject(projectName, config)

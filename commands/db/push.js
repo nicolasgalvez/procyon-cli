@@ -1,64 +1,117 @@
 const { spawn } = require('child_process')
+const fs = require('fs')
 const path = require('path')
 const { prompt } = require('enquirer')
+const { getProjectFromCwd, getEnvironment } = require('../../src/config/store')
+const { RsyncTransfer } = require('../../src/sync/rsync')
 
 module.exports = {
-  command: 'push <target> [--remote-url] [--local-url] [-y]',
-  describe: 'Pull uploads, theme, or plugins from an environment.',
+  command: 'push <target> [-y]',
+  describe: 'Push database to a target environment',
   builder: {
     target: {
       demandOption: true
-    },
-    'remote-url': {
-      default: 'public'
-    },
-    'local-url': {
-      default: 'public'
     },
     y: {
       describe: 'Skip confirmation prompt',
       type: 'boolean'
     }
   },
-  handler: (argv) => {
-    console.log(process.env.SITE_NAME) // This is available because of the loadEnvMiddleware
+  handler: async (argv) => {
+    const project = getProjectFromCwd()
 
+    if (project) {
+      const env = getEnvironment(project, argv.target)
+      if (!env) {
+        console.error(`Environment "${argv.target}" not found in project config.`)
+        process.exit(1)
+      }
+
+      // Confirm unless -y
+      if (!argv.y) {
+        const { confirm } = await prompt({
+          type: 'confirm',
+          name: 'confirm',
+          message: `Push local database to ${argv.target}? This will overwrite the remote database.`,
+          initial: false
+        })
+        if (!confirm) {
+          console.log('Operation cancelled.')
+          return
+        }
+      }
+
+      const rsync = new RsyncTransfer(project, env)
+      const wpCli = project.wpCli || 'wp'
+
+      // 1. Export local database
+      console.log('Exporting local database...')
+      await wpCmd(wpCli, ['db', 'export', 'db.sql'], project.localPath)
+
+      // 2. Upload dump via rsync
+      console.log('Uploading database dump...')
+      await rsync.exec([
+        '-chavzP', '--stats',
+        '-e', rsync.buildSshCommand(),
+        path.join(project.localPath, 'db.sql'),
+        rsync.buildRemote('db.sql')
+      ])
+
+      // 3. Backup remote database
+      console.log('Backing up remote database...')
+      await rsync.ssh(`cd ${env.path} && wp db export db-backup.sql`).catch(() => {})
+
+      // 4. Import on remote
+      console.log('Importing database on remote...')
+      await rsync.ssh(`cd ${env.path} && wp db import db.sql`)
+
+      // 5. Search-replace domains
+      if (project.localDomain) {
+        const remoteDomain = env.domain || env.host
+        console.log(`Replacing ${project.localDomain} → ${remoteDomain}...`)
+        await rsync.ssh(`cd ${env.path} && wp search-replace --all-tables '${project.localDomain}' '${remoteDomain}'`)
+      } else {
+        console.log('Skipping search-replace (no localDomain in project config)')
+      }
+
+      // 6. Cleanup
+      const localDump = path.join(project.localPath, 'db.sql')
+      if (fs.existsSync(localDump)) fs.unlinkSync(localDump)
+      await rsync.ssh(`rm -f ${env.path}/db.sql`).catch(() => {})
+
+      console.log('Database push complete.')
+      return
+    }
+
+    // Fallback: legacy shell script
     const executeCommand = () => {
       const command = path.join(__dirname, '../../bin/db-push.sh')
-
-      const child = spawn(command, [argv.target], {
-        stdio: 'inherit'
-      })
-
-      child.on('error', (error) => {
-        console.log(`error: ${error.message}`)
-      })
-
+      const child = spawn(command, [argv.target], { stdio: 'inherit' })
+      child.on('error', (error) => console.log(`error: ${error.message}`))
       child.on('close', (code) => {
-        if (code !== 0) {
-          console.log(`Process exited with code ${code}`)
-        }
+        if (code !== 0) console.log(`Process exited with code ${code}`)
       })
     }
 
     if (argv.y) {
       executeCommand()
     } else {
-      prompt({
+      const { confirm } = await prompt({
         type: 'confirm',
         name: 'confirm',
         message: 'Are you sure you want to proceed?'
       })
-        .then(({ confirm }) => {
-          if (confirm) {
-            executeCommand()
-          } else {
-            console.log('Operation cancelled by the user.')
-          }
-        })
-        .catch((error) => {
-          console.error('An error occurred during the prompt:', error)
-        })
+      if (confirm) executeCommand()
+      else console.log('Operation cancelled.')
     }
   }
+}
+
+function wpCmd (wpCli, args, cwd) {
+  const parts = wpCli.split(' ')
+  return new Promise((resolve, reject) => {
+    const child = spawn(parts[0], [...parts.slice(1), ...args], { stdio: 'inherit', cwd })
+    child.on('close', (code) => code === 0 ? resolve() : reject(new Error(`exit ${code}`)))
+    child.on('error', reject)
+  })
 }
