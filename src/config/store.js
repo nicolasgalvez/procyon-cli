@@ -83,6 +83,7 @@ function getEnvironment (projectName, envName) {
 function toEnv (project, envName) {
   process.env.SITE_NAME = project.name
   process.env.LOCAL_PATH = project.localPath
+  process.env.LOCAL_DOMAIN = project.localDomain || ''
   process.env.WP = project.wpCli || 'wp'
   process.env.STACK = project.wpCli === 'lando wp' ? 'lando' : 'localwp'
 
@@ -90,7 +91,7 @@ function toEnv (project, envName) {
   if (env) {
     process.env.TARGET_ENV = envName
     process.env.REMOTE_SSH = `${env.user}@${env.host}`
-    process.env.REMOTE_DOMAIN = `${env.user}@${env.host}`
+    process.env.REMOTE_DOMAIN = env.domain || `${env.user}@${env.host}`
     process.env.REMOTE_PATH = env.path
   }
 
@@ -98,7 +99,7 @@ function toEnv (project, envName) {
   for (const [name, cfg] of Object.entries(project.environments)) {
     const prefix = name.toUpperCase()
     process.env[`${prefix}_SSH`] = `${cfg.user}@${cfg.host}`
-    process.env[`${prefix}_DOMAIN`] = `${cfg.user}@${cfg.host}`
+    process.env[`${prefix}_DOMAIN`] = cfg.domain || `${cfg.user}@${cfg.host}`
     process.env[`${prefix}_PATH`] = cfg.path
   }
 }

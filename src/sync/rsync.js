@@ -133,8 +133,12 @@ class RsyncTransfer {
    * Run an SSH command on the remote
    */
   async ssh (command) {
-    const { user, host, port } = this.env
-    const args = ['-p', String(port || 22), `${user}@${host}`, '-C', command]
+    const { user, host, port, identityFile } = this.env
+    const args = ['-p', String(port || 22)]
+    if (identityFile) {
+      args.push('-i', identityFile.replace('~', os.homedir()))
+    }
+    args.push(`${user}@${host}`, '-C', command)
 
     return new Promise((resolve, reject) => {
       const child = spawn('ssh', args, { stdio: 'inherit' })
