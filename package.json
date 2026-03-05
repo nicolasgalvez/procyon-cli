@@ -7,8 +7,9 @@
     "procyon": "./index.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint commands/*.js --fix index.js --fix",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint 'commands/**/*.js' 'src/**/*.js' index.js --fix",
     "prepare": "husky install"
   },
   "author": "",
@@ -28,7 +29,8 @@
     "eslint-plugin-import": "^2.27.5",
     "eslint-plugin-n": "^16.0.1",
     "eslint-plugin-promise": "^6.1.1",
-    "husky": "^8.0.3"
+    "husky": "^8.0.3",
+    "vitest": "^4.0.18"
   },
   "husky": {
     "hooks": {

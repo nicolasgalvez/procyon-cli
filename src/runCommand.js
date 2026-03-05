@@ -1,5 +1,4 @@
 const { spawn } = require('child_process')
-const { join } = require('path')
 
 /**
  * Run a command using spawn
@@ -9,9 +8,8 @@ const { join } = require('path')
  * @returns {Promise} - A promise that resolves when the command is done, and rejects when an error happens.
  */
 function runCommand (command, options) {
-
   return new Promise((resolve, reject) => {
-    let child = spawn(process.env.ROOT_PATH + '/' + command, options, {
+    const child = spawn(process.env.ROOT_PATH + '/' + command, options, {
       stdio: 'inherit'
     })
 

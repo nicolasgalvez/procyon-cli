@@ -1,4 +1,5 @@
 const { spawn } = require('child_process')
+const path = require('path')
 
 module.exports = {
   command: 'pull <target> [--remote-url] [--local-url]',
@@ -17,9 +18,9 @@ module.exports = {
   handler: (argv) => {
     console.log(process.env.SITE_NAME) // This is available because of the loadEnvMiddleware
 
-    let command = `${__dirname}/../../bin/db-pull.sh`
+    const command = path.join(__dirname, '../../bin/db-pull.sh')
 
-    let child = spawn(command, [argv.target], {
+    const child = spawn(command, [argv.target], {
       stdio: 'inherit'
     })
 
