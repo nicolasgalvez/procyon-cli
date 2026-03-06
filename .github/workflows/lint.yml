@@ -1,4 +1,4 @@
-name: Code Quality Check
+name: CI
 
 on:
   push:
@@ -9,15 +9,23 @@ on:
       - main
 
 jobs:
-  build:
+  lint-and-test:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Run code quality checks
+      - name: Lint
         run: npm run lint
+
+      - name: Test
+        run: npm test

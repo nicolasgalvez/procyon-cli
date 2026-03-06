@@ -15,6 +15,9 @@ pnpm install
 # Lint (runs on pre-commit via husky)
 npm run lint
 
+# Run tests
+npm test
+
 # Run CLI locally during development
 node index.js <command> [options]
 
@@ -24,13 +27,13 @@ npm link
 
 ## Architecture
 
-**Entry Point:** `index.js` - Sets up yargs with a unified `loadProjectMiddleware` that:
+**Entry Point:** `index.js` - Sets up yargs with `loadProjectMiddleware` that:
 1. Skips config for setup commands (`init`, `migrate`, `projects`)
-2. Tries new `.procyon` config system first
-3. Falls back to legacy `.env` file if no `.procyon` link exists
+2. Loads `.procyon` config from current directory, attaches as `argv.project`
+3. Exits with error if no `.procyon` link exists
 
 **Config System:** `src/config/`
-- `store.js` - CRUD for `~/.procyon/projects/*.json`, project linking, `toEnv()` bridge for backward compatibility
+- `store.js` - CRUD for `~/.procyon/projects/*.json`, project linking
 - `schema.js` - Validation for project configs and `.procyon` link files
 
 **Sync System:** `src/sync/`
@@ -43,6 +46,7 @@ commands/
 ├── init.js            # Interactive project setup wizard
 ├── migrate.js         # Import .env to new config format
 ├── projects.js        # List/show/remove registered projects
+├── plugin.js          # Install plugins from CSV
 ├── db.js              # Parent: 'db <command>'
 ├── db/
 │   ├── pull.js
@@ -54,23 +58,19 @@ commands/
     └── rollback.js    # Restore from timestamped backups
 ```
 
-**Shell Scripts (legacy):** `bin/` contains bash scripts used as fallback when no `.procyon` config exists. File commands use the new `RsyncTransfer` class when the new config is available.
-
-**Utility Functions:** `src/` contains shared utilities:
-- `runCommand.js` - Promise wrapper around spawn for legacy shell scripts
-- `update-env.js` - Environment file manipulation
-- `readVariablesFromTemplate.js` - Template variable extraction
+**Static Files:** `bin/rsync-exclude` - Default exclude patterns for rsync transfers.
 
 ## Configuration
 
-**New format (preferred):** Run `procyon init` to create `~/.procyon/projects/<name>.json` and a `.procyon` link file in the project directory.
-
-**Legacy format:** `.env` file with:
-- `SITE_NAME`, `LOCAL_DOMAIN`, `LOCAL_PATH`
-- `STAGING_DOMAIN`, `STAGING_SSH`, `STAGING_PATH`
-- `LIVE_DOMAIN`, `LIVE_SSH`, `LIVE_PATH`
+Run `procyon init` to create `~/.procyon/projects/<name>.json` and a `.procyon` link file in the project directory. Use `procyon migrate` to import from a legacy `.env` file.
 
 ## Environment Detection
 
-- Lando detection: If `wpCli` is `"lando wp"` in config (or `LOCAL_DOMAIN` contains "lndo" in legacy `.env`)
-- WP Engine detection: Scripts check for "wpe-user" in paths for special export handling
+- Lando detection: If `wpCli` is `"lando wp"` in project config
+- WP Engine detection: Commands check for "wpe-user" in paths for special export handling
+
+## Testing
+
+- vitest v4 (ESM-only imports, `createRequire` for CJS source)
+- `store.paths` object is mutable for test isolation (temp dirs)
+- 45 tests across 4 files: schema, store, rsync, backup

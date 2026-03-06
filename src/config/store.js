@@ -76,34 +76,6 @@ function getEnvironment (projectName, envName) {
   return project.environments[envName] || null
 }
 
-/**
- * Populate process.env with values from the new config format.
- * This bridges the gap so existing shell scripts still work.
- */
-function toEnv (project, envName) {
-  process.env.SITE_NAME = project.name
-  process.env.LOCAL_PATH = project.localPath
-  process.env.LOCAL_DOMAIN = project.localDomain || ''
-  process.env.WP = project.wpCli || 'wp'
-  process.env.STACK = project.wpCli === 'lando wp' ? 'lando' : 'localwp'
-
-  const env = project.environments[envName]
-  if (env) {
-    process.env.TARGET_ENV = envName
-    process.env.REMOTE_SSH = `${env.user}@${env.host}`
-    process.env.REMOTE_DOMAIN = env.domain || `${env.user}@${env.host}`
-    process.env.REMOTE_PATH = env.path
-  }
-
-  // Also set per-environment vars for compatibility
-  for (const [name, cfg] of Object.entries(project.environments)) {
-    const prefix = name.toUpperCase()
-    process.env[`${prefix}_SSH`] = `${cfg.user}@${cfg.host}`
-    process.env[`${prefix}_DOMAIN`] = cfg.domain || `${cfg.user}@${cfg.host}`
-    process.env[`${prefix}_PATH`] = cfg.path
-  }
-}
-
 module.exports = {
   paths,
   ensureConfigDir,
@@ -113,6 +85,5 @@ module.exports = {
   removeProject,
   getProjectFromCwd,
   saveLink,
-  getEnvironment,
-  toEnv
+  getEnvironment
 }
