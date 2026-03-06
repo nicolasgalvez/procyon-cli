@@ -1,5 +1,5 @@
 const { RsyncTransfer } = require('../../src/sync/rsync')
-const { getProjectFromCwd, getEnvironment } = require('../../src/config/store')
+const { getEnvironment } = require('../../src/config/store')
 const { listBackups, getBackupPath } = require('../../src/sync/backup')
 const { prompt } = require('enquirer')
 
@@ -25,13 +25,7 @@ module.exports = {
     }
   },
   handler: async (argv) => {
-    const project = getProjectFromCwd()
-    if (!project) {
-      console.error('No .procyon project found. Rollback requires the new config system.')
-      console.error('Run `procyon init` or `procyon migrate` first.')
-      process.exit(1)
-    }
-
+    const project = argv.project
     const env = getEnvironment(project, argv.target)
     if (!env) {
       console.error(`Environment "${argv.target}" not found.`)

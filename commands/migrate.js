@@ -1,6 +1,5 @@
 const fs = require('fs')
 const path = require('path')
-const dotenv = require('dotenv')
 const { prompt } = require('enquirer')
 const { saveProject, saveLink } = require('../src/config/store')
 
@@ -21,7 +20,7 @@ module.exports = {
       process.exit(1)
     }
 
-    const envConfig = dotenv.parse(fs.readFileSync(envPath))
+    const envConfig = parseEnvFile(fs.readFileSync(envPath, 'utf8'))
 
     console.log('\nFound .env file with:')
     Object.entries(envConfig).forEach(([key, value]) => {
@@ -98,6 +97,23 @@ module.exports = {
 
     console.log('\nMigration complete!')
   }
+}
+
+module.exports.parseEnvFile = parseEnvFile
+module.exports.parseSSHString = parseSSHString
+
+function parseEnvFile (content) {
+  const result = {}
+  for (const line of content.split('\n')) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#')) continue
+    const idx = trimmed.indexOf('=')
+    if (idx === -1) continue
+    const key = trimmed.slice(0, idx).trim()
+    const value = trimmed.slice(idx + 1).trim().replace(/^["']|["']$/g, '')
+    result[key] = value
+  }
+  return result
 }
 
 function parseSSHString (sshString) {

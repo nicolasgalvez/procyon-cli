@@ -1,6 +1,5 @@
 const { RsyncTransfer } = require('../../src/sync/rsync')
-const { getProjectFromCwd, getEnvironment } = require('../../src/config/store')
-const runCommand = require('../../src/runCommand')
+const { getEnvironment } = require('../../src/config/store')
 
 const ITEM_PATHS = {
   themes: 'wp-content/themes',
@@ -30,50 +29,31 @@ module.exports = {
     }
   },
   handler: async (argv) => {
-    const project = getProjectFromCwd()
-
-    // Use new config system if available
-    if (project) {
-      const env = getEnvironment(project, argv.target)
-      if (!env) {
-        console.error(`Environment "${argv.target}" not found in project config.`)
-        process.exit(1)
-      }
-
-      const rsync = new RsyncTransfer(project, env)
-      const items = argv.item === 'all' ? ['themes', 'plugins', 'uploads'] : [argv.item]
-
-      for (const item of items) {
-        let subpath = ITEM_PATHS[item]
-        if (argv.name) {
-          subpath = `${subpath}/${argv.name}`
-        }
-
-        console.log(`Pulling ${item}${argv.name ? ` (${argv.name})` : ''}...`)
-
-        try {
-          await rsync.pull(subpath, subpath, {
-            dryRun: argv.dryRun,
-            delete: item !== 'uploads'
-          })
-        } catch (error) {
-          console.error(`Error pulling ${item}:`, error.message)
-        }
-      }
-      return
+    const project = argv.project
+    const env = getEnvironment(project, argv.target)
+    if (!env) {
+      console.error(`Environment "${argv.target}" not found in project config.`)
+      process.exit(1)
     }
 
-    // Fallback: use old shell scripts
+    const rsync = new RsyncTransfer(project, env)
     const items = argv.item === 'all' ? ['themes', 'plugins', 'uploads'] : [argv.item]
+
     for (const item of items) {
-      let command
-      if (item === 'themes') command = 'bin/files-pull-themes.sh'
-      if (item === 'uploads') command = 'bin/files-pull.sh'
-      if (item === 'plugins') command = 'bin/files-pull-plugins.sh'
+      let subpath = ITEM_PATHS[item]
+      if (argv.name) {
+        subpath = `${subpath}/${argv.name}`
+      }
+
+      console.log(`Pulling ${item}${argv.name ? ` (${argv.name})` : ''}...`)
+
       try {
-        await runCommand(command, [argv.target])
+        await rsync.pull(subpath, subpath, {
+          dryRun: argv.dryRun,
+          delete: item !== 'uploads'
+        })
       } catch (error) {
-        console.error('Error running command:', error)
+        console.error(`Error pulling ${item}:`, error.message)
       }
     }
   }

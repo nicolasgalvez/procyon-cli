@@ -2,11 +2,9 @@ const fs = require('fs')
 const csv = require('csv-parser')
 const { execSync } = require('child_process')
 
-const WP_COMMAND = process.env.WP || 'lando wp'
-
 // Function to execute WP-CLI command
-function installPlugin (name, version, isActive) {
-  let command = `${WP_COMMAND} plugin install "${name}" --version="${version}" --force`
+function installPlugin (wpCommand, name, version, isActive) {
+  let command = `${wpCommand} plugin install "${name}" --version="${version}" --force`
   console.log(command)
   if (isActive) {
     command += ' --activate'
@@ -26,7 +24,7 @@ function installPlugin (name, version, isActive) {
 }
 
 // Main function to process the CSV file
-function processCSV (filePath) {
+function processCSV (wpCommand, filePath) {
   const results = []
 
   fs.createReadStream(filePath)
@@ -34,7 +32,7 @@ function processCSV (filePath) {
     .on('data', (row) => {
       if (row.name && row.name !== 'name') {
         const version = row.version.replace(/\r/g, '') // Remove carriage returns
-        const status = installPlugin(row.name, version, row.status === 'active')
+        const status = installPlugin(wpCommand, row.name, version, row.status === 'active')
         results.push(status)
       }
     })
@@ -56,6 +54,7 @@ module.exports = {
     }
   },
   handler: (argv) => {
-    processCSV(argv.csv)
+    const wpCommand = argv.project.wpCli || 'wp'
+    processCSV(wpCommand, argv.csv)
   }
 }
