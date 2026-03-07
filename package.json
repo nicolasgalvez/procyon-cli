@@ -7,19 +7,16 @@
     "procyon": "./index.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint commands/*.js --fix index.js --fix",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint 'commands/**/*.js' 'src/**/*.js' index.js --fix",
     "prepare": "husky install"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "csv-parser": "^3.0.0",
-    "csv-writer": "^1.6.0",
-    "dotenv": "^16.3.1",
     "enquirer": "^2.3.6",
-    "handlebars": "^4.7.7",
-    "readline-sync": "^1.4.10",
     "yargs": "^17.7.2"
   },
   "devDependencies": {
@@ -28,7 +25,8 @@
     "eslint-plugin-import": "^2.27.5",
     "eslint-plugin-n": "^16.0.1",
     "eslint-plugin-promise": "^6.1.1",
-    "husky": "^8.0.3"
+    "husky": "^8.0.3",
+    "vitest": "^4.0.18"
   },
   "husky": {
     "hooks": {

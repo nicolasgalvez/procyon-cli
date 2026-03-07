@@ -1,40 +1,59 @@
-const runCommand = require('../../src/runCommand')
+const { RsyncTransfer } = require('../../src/sync/rsync')
+const { getEnvironment } = require('../../src/config/store')
+
+const ITEM_PATHS = {
+  themes: 'wp-content/themes',
+  plugins: 'wp-content/plugins',
+  uploads: 'wp-content/uploads'
+}
 
 module.exports = {
-  command: 'pull <target> [item] [--remote-path] [--local-path]',
-  describe: 'Pull uploads, theme, or plugins from an environment.',
+  command: 'pull <target> [item] [--name]',
+  describe: 'Pull uploads, themes, or plugins from an environment.',
   builder: {
     target: {
       demandOption: true
     },
-    'remote-path': {
-      default: 'public'
-    },
-    'local-path': {
-      default: 'public'
-    },
     item: {
       default: 'uploads',
       choices: ['themes', 'plugins', 'uploads', 'all']
+    },
+    name: {
+      type: 'string',
+      describe: 'Pull a single theme or plugin by name'
+    },
+    'dry-run': {
+      type: 'boolean',
+      describe: 'Preview changes without transferring',
+      default: false
     }
   },
-  handler: async (argv) => {  // Note the added async keyword
-    let items = argv.item === 'all' ? ['themes', 'plugins', 'uploads'] : [argv.item]
-    for (let item of items) {  // Note the changed loop
-      let command
-      if (item === 'themes') {
-        command = `bin/files-pull-themes.sh`
+  handler: async (argv) => {
+    const project = argv.project
+    const env = getEnvironment(project, argv.target)
+    if (!env) {
+      console.error(`Environment "${argv.target}" not found in project config.`)
+      process.exit(1)
+    }
+
+    const rsync = new RsyncTransfer(project, env)
+    const items = argv.item === 'all' ? ['themes', 'plugins', 'uploads'] : [argv.item]
+
+    for (const item of items) {
+      let subpath = ITEM_PATHS[item]
+      if (argv.name) {
+        subpath = `${subpath}/${argv.name}`
       }
-      if (item === 'uploads') {
-        command = `bin/files-pull.sh`
-      }
-      if (item === 'plugins') {
-        command = `bin/files-pull-plugins.sh`
-      }
+
+      console.log(`Pulling ${item}${argv.name ? ` (${argv.name})` : ''}...`)
+
       try {
-        await runCommand(command, [argv.target])
+        await rsync.pull(subpath, subpath, {
+          dryRun: argv.dryRun,
+          delete: item !== 'uploads'
+        })
       } catch (error) {
-        console.error('Error running command:', error)
+        console.error(`Error pulling ${item}:`, error.message)
       }
     }
   }
