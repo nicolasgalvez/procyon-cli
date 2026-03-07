@@ -5,14 +5,13 @@ const { execSync } = require('child_process')
 // Function to execute WP-CLI command
 function installPlugin (wpCommand, name, version, isActive) {
   let command = `${wpCommand} plugin install "${name}" --version="${version}" --force`
-  console.log(command)
   if (isActive) {
     command += ' --activate'
   }
 
+  console.log(command)
   try {
     const output = execSync(command, { stdio: 'pipe' }).toString()
-    console.log(command)
     if (output.includes('Success')) {
       return `Success,${name},${version}`
     } else {
