@@ -85,6 +85,24 @@ describe('validateProject', () => {
     expect(result.valid).toBe(false)
     expect(result.errors.length).toBeGreaterThanOrEqual(3)
   })
+
+  it('rejects null config', () => {
+    const result = validateProject(null)
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContain('Config must be an object')
+  })
+
+  it('rejects non-object environments', () => {
+    const result = validateProject({ name: 'test', localPath: '/tmp', environments: 'abc' })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContain('environments must be an object')
+  })
+
+  it('rejects array environments', () => {
+    const result = validateProject({ name: 'test', localPath: '/tmp', environments: [] })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContain('environments must be an object')
+  })
 })
 
 describe('validateLink', () => {

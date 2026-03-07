@@ -2,7 +2,7 @@ const { spawn } = require('child_process')
 const fs = require('fs')
 const path = require('path')
 const { getEnvironment } = require('../../src/config/store')
-const { RsyncTransfer } = require('../../src/sync/rsync')
+const { RsyncTransfer, shellQuote } = require('../../src/sync/rsync')
 
 module.exports = {
   command: 'pull <target>',
@@ -30,7 +30,7 @@ module.exports = {
 
     // 1. Export database on remote
     console.log('Exporting remote database...')
-    await rsync.ssh(`cd ${env.path} && wp db export ${remoteDumpPath}`)
+    await rsync.ssh(`cd ${shellQuote(env.path)} && wp db export ${shellQuote(remoteDumpPath)}`)
 
     // 2. Download the dump via rsync (single file)
     console.log('Downloading database dump...')
@@ -47,7 +47,11 @@ module.exports = {
     await wpCmd(wpCli, ['db', 'export', '.tmp/db-backup.sql'], project.localPath)
       .catch(() => console.log('  (no existing local database)'))
 
-    // 4. Import
+    // 4. Reset and import
+    console.log('Resetting local database...')
+    await wpCmd(wpCli, ['db', 'reset', '--yes'], project.localPath)
+      .catch(() => console.log('  (reset skipped — no existing database)'))
+
     console.log('Importing database...')
     await wpCmd(wpCli, ['db', 'import', 'db.sql'], project.localPath)
 
@@ -64,7 +68,7 @@ module.exports = {
     await wpCmd(wpCli, ['transient', 'delete', '--all'], project.localPath).catch(() => {})
     const localDump = path.join(project.localPath, 'db.sql')
     if (fs.existsSync(localDump)) fs.unlinkSync(localDump)
-    await rsync.ssh(`rm -f ${remoteDumpPath}`).catch(() => {})
+    await rsync.ssh(`rm -f ${shellQuote(remoteDumpPath)}`).catch(() => {})
 
     console.log('Database pull complete.')
   }

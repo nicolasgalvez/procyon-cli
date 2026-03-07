@@ -15,7 +15,8 @@ class RsyncTransfer {
     const { port, identityFile } = this.env
     let ssh = `ssh -p ${port || 22}`
     if (identityFile) {
-      ssh += ` -i ${identityFile.replace('~', os.homedir())}`
+      const keyPath = identityFile.replace('~', os.homedir())
+      ssh += ` -i "${keyPath}"`
     }
     return ssh
   }
@@ -138,7 +139,7 @@ class RsyncTransfer {
     if (identityFile) {
       args.push('-i', identityFile.replace('~', os.homedir()))
     }
-    args.push(`${user}@${host}`, '-C', command)
+    args.push(`${user}@${host}`, command)
 
     return new Promise((resolve, reject) => {
       const child = spawn('ssh', args, { stdio: 'inherit' })
@@ -178,6 +179,10 @@ class RsyncTransfer {
   }
 }
 
+function shellQuote (s) {
+  return "'" + s.replace(/'/g, "'\\''") + "'"
+}
+
 function ensureTrailingSlash (p) {
   return p.endsWith('/') ? p : p + '/'
 }
@@ -208,4 +213,4 @@ function parseItemizedChanges (output) {
   return { added, modified, deleted }
 }
 
-module.exports = { RsyncTransfer, parseItemizedChanges }
+module.exports = { RsyncTransfer, parseItemizedChanges, shellQuote }

@@ -47,9 +47,20 @@ module.exports = {
 
     console.log('\nParsing SSH strings...')
 
+    let localPath = envConfig.LOCAL_PATH
+    if (!localPath) {
+      const answer = await prompt({
+        type: 'input',
+        name: 'localPath',
+        message: 'LOCAL_PATH not found in .env. Enter local WordPress path:',
+        initial: process.cwd()
+      })
+      localPath = answer.localPath
+    }
+
     const config = {
       name: projectName,
-      localPath: envConfig.LOCAL_PATH,
+      localPath,
       localDomain: envConfig.LOCAL_DOMAIN || undefined,
       wpCli: envConfig.LOCAL_DOMAIN?.includes('lndo') ? 'lando wp' : 'wp',
       environments: {}
@@ -132,7 +143,7 @@ function parseSSHString (sshString) {
     }
   } else {
     host = sshString
-    user = process.env.USER
+    user = require('os').userInfo().username
   }
 
   return { host, user, port }
