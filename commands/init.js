@@ -6,13 +6,7 @@ const { saveProject, saveLink, getProjectFromCwd } = require('../src/config/stor
 module.exports = {
   command: 'init',
   describe: 'Set up a new project configuration',
-  builder: {
-    'skip-verify': {
-      type: 'boolean',
-      describe: 'Skip SSH connection verification',
-      default: false
-    }
-  },
+  builder: {},
   handler: async (argv) => {
     // Check if already initialized
     const existing = getProjectFromCwd()

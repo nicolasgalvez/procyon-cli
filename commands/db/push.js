@@ -3,7 +3,7 @@ const fs = require('fs')
 const path = require('path')
 const { prompt } = require('enquirer')
 const { getEnvironment } = require('../../src/config/store')
-const { RsyncTransfer } = require('../../src/sync/rsync')
+const { RsyncTransfer, shellQuote } = require('../../src/sync/rsync')
 
 module.exports = {
   command: 'push <target> [-y]',
@@ -57,17 +57,17 @@ module.exports = {
 
     // 3. Backup remote database
     console.log('Backing up remote database...')
-    await rsync.ssh(`cd ${env.path} && wp db export db-backup.sql`).catch(() => {})
+    await rsync.ssh(`cd ${shellQuote(env.path)} && wp db export db-backup.sql`).catch(() => {})
 
     // 4. Import on remote
     console.log('Importing database on remote...')
-    await rsync.ssh(`cd ${env.path} && wp db import db.sql`)
+    await rsync.ssh(`cd ${shellQuote(env.path)} && wp db import db.sql`)
 
     // 5. Search-replace domains
     if (project.localDomain) {
       const remoteDomain = env.domain || env.host
       console.log(`Replacing ${project.localDomain} → ${remoteDomain}...`)
-      await rsync.ssh(`cd ${env.path} && wp search-replace --all-tables '${project.localDomain}' '${remoteDomain}'`)
+      await rsync.ssh(`cd ${shellQuote(env.path)} && wp search-replace --all-tables ${shellQuote(project.localDomain)} ${shellQuote(remoteDomain)}`)
     } else {
       console.log('Skipping search-replace (no localDomain in project config)')
     }
@@ -75,7 +75,7 @@ module.exports = {
     // 6. Cleanup
     const localDump = path.join(project.localPath, 'db.sql')
     if (fs.existsSync(localDump)) fs.unlinkSync(localDump)
-    await rsync.ssh(`rm -f ${env.path}/db.sql`).catch(() => {})
+    await rsync.ssh(`rm -f ${shellQuote(env.path + '/db.sql')}`).catch(() => {})
 
     console.log('Database push complete.')
   }

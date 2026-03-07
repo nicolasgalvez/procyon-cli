@@ -28,7 +28,7 @@ async function createBackup (rsync, project, envName, item, itemName) {
   const { RsyncTransfer } = require('./rsync')
   const backupRsync = new RsyncTransfer(backupProject, rsync.env)
 
-  await backupRsync.pull(subpath, itemName || item)
+  await backupRsync.pull(subpath, item)
 
   console.log('Backup complete.')
   return { timestamp, path: backupDir }

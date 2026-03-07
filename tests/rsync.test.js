@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { createRequire } from 'module'
 const require = createRequire(import.meta.url)
-const { RsyncTransfer, parseItemizedChanges } = require('../src/sync/rsync')
+const { RsyncTransfer, parseItemizedChanges, shellQuote } = require('../src/sync/rsync')
 
 const mockProject = {
   name: 'test-site',
@@ -35,7 +35,7 @@ describe('RsyncTransfer', () => {
         ...mockEnv,
         identityFile: '/home/user/.ssh/id_rsa'
       })
-      expect(rsync.buildSshCommand()).toBe('ssh -p 22 -i /home/user/.ssh/id_rsa')
+      expect(rsync.buildSshCommand()).toBe('ssh -p 22 -i "/home/user/.ssh/id_rsa"')
     })
 
     it('expands tilde in identity file', () => {
@@ -44,7 +44,7 @@ describe('RsyncTransfer', () => {
         ...mockEnv,
         identityFile: '~/.ssh/id_rsa'
       })
-      expect(rsync.buildSshCommand()).toBe(`ssh -p 22 -i ${os.homedir()}/.ssh/id_rsa`)
+      expect(rsync.buildSshCommand()).toBe(`ssh -p 22 -i "${os.homedir()}/.ssh/id_rsa"`)
     })
   })
 
@@ -171,5 +171,19 @@ describe('parseItemizedChanges', () => {
     expect(result.added).toEqual([])
     expect(result.modified).toEqual([])
     expect(result.deleted).toEqual([])
+  })
+})
+
+describe('shellQuote', () => {
+  it('quotes a simple string', () => {
+    expect(shellQuote('/var/www/html')).toBe("'/var/www/html'")
+  })
+
+  it('escapes single quotes', () => {
+    expect(shellQuote("it's")).toBe("'it'\\''s'")
+  })
+
+  it('handles paths with spaces', () => {
+    expect(shellQuote('/my path/to dir')).toBe("'/my path/to dir'")
   })
 })
