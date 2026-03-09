@@ -1,12 +1,13 @@
 import { describe, it, expect } from 'vitest'
 import { createRequire } from 'module'
 const require = createRequire(import.meta.url)
-const { validateProject, validateLink } = require('../src/config/schema')
+const { validateProject } = require('../src/config/schema')
 
 describe('validateProject', () => {
   const validConfig = {
     name: 'test-site',
-    localPath: '/Users/test/Sites/test-site',
+    projectPath: '/Users/test/Sites/test-site',
+    localPath: '/Users/test/Sites/test-site/public',
     environments: {
       staging: {
         host: 'staging.example.com',
@@ -35,8 +36,14 @@ describe('validateProject', () => {
     expect(result.errors).toContain('Missing required field: localPath')
   })
 
+  it('rejects missing projectPath', () => {
+    const result = validateProject({ name: 'test', localPath: '/tmp', environments: {} })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContain('Missing required field: projectPath')
+  })
+
   it('rejects missing environments', () => {
-    const result = validateProject({ name: 'test', localPath: '/tmp' })
+    const result = validateProject({ name: 'test', projectPath: '/tmp', localPath: '/tmp' })
     expect(result.valid).toBe(false)
     expect(result.errors).toContain('Missing required field: environments')
   })
@@ -44,6 +51,7 @@ describe('validateProject', () => {
   it('rejects environment missing host', () => {
     const config = {
       name: 'test',
+      projectPath: '/tmp',
       localPath: '/tmp',
       environments: {
         staging: { user: 'deploy', path: '/var/www' }
@@ -57,6 +65,7 @@ describe('validateProject', () => {
   it('rejects environment missing user', () => {
     const config = {
       name: 'test',
+      projectPath: '/tmp',
       localPath: '/tmp',
       environments: {
         live: { host: 'example.com', path: '/var/www' }
@@ -70,6 +79,7 @@ describe('validateProject', () => {
   it('rejects environment missing path', () => {
     const config = {
       name: 'test',
+      projectPath: '/tmp',
       localPath: '/tmp',
       environments: {
         staging: { host: 'example.com', user: 'deploy' }
@@ -93,31 +103,14 @@ describe('validateProject', () => {
   })
 
   it('rejects non-object environments', () => {
-    const result = validateProject({ name: 'test', localPath: '/tmp', environments: 'abc' })
+    const result = validateProject({ name: 'test', projectPath: '/tmp', localPath: '/tmp', environments: 'abc' })
     expect(result.valid).toBe(false)
     expect(result.errors).toContain('environments must be an object')
   })
 
   it('rejects array environments', () => {
-    const result = validateProject({ name: 'test', localPath: '/tmp', environments: [] })
+    const result = validateProject({ name: 'test', projectPath: '/tmp', localPath: '/tmp', environments: [] })
     expect(result.valid).toBe(false)
     expect(result.errors).toContain('environments must be an object')
-  })
-})
-
-describe('validateLink', () => {
-  it('accepts a valid link', () => {
-    const result = validateLink({ project: 'my-site' })
-    expect(result.valid).toBe(true)
-  })
-
-  it('rejects missing project', () => {
-    const result = validateLink({})
-    expect(result.valid).toBe(false)
-  })
-
-  it('rejects non-string project', () => {
-    const result = validateLink({ project: 123 })
-    expect(result.valid).toBe(false)
   })
 })

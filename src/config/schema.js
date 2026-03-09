@@ -1,4 +1,4 @@
-const REQUIRED_PROJECT_FIELDS = ['name', 'localPath', 'environments']
+const REQUIRED_PROJECT_FIELDS = ['name', 'projectPath', 'localPath', 'environments']
 const REQUIRED_ENV_FIELDS = ['host', 'user', 'path']
 
 function validateProject (config) {
@@ -35,11 +35,4 @@ function validateProject (config) {
   return { valid: errors.length === 0, errors }
 }
 
-function validateLink (link) {
-  if (!link.project || typeof link.project !== 'string') {
-    return { valid: false, errors: ['Missing or invalid "project" field'] }
-  }
-  return { valid: true, errors: [] }
-}
-
-module.exports = { validateProject, validateLink }
+module.exports = { validateProject }

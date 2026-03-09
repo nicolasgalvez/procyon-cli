@@ -34,8 +34,8 @@ module.exports = {
     if (argv.action === 'show') {
       const project = getProjectFromCwd()
       if (!project) {
-        console.error('No .procyon link found in current directory.')
-        console.error('Run `procyon init` or cd to a linked project directory.')
+        console.error('No project config found for this directory.')
+        console.error('Run `procyon init` or cd to a project directory.')
         process.exit(1)
       }
       console.log(JSON.stringify(project, null, 2))

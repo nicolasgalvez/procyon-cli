@@ -1,13 +1,12 @@
 const os = require('os')
 const path = require('path')
 const fs = require('fs')
-const { validateProject, validateLink } = require('./schema')
+const { validateProject } = require('./schema')
 
 const paths = {
   procyonDir: path.join(os.homedir(), '.procyon'),
   projectsDir: path.join(os.homedir(), '.procyon', 'projects')
 }
-const LINK_FILE = '.procyon'
 
 function ensureConfigDir () {
   if (!fs.existsSync(paths.projectsDir)) {
@@ -53,21 +52,16 @@ function removeProject (name) {
 }
 
 function getProjectFromCwd (cwd) {
-  const linkPath = path.join(cwd || process.cwd(), LINK_FILE)
-  if (!fs.existsSync(linkPath)) {
-    return null
+  const dir = cwd || process.cwd()
+  ensureConfigDir()
+  const files = fs.readdirSync(paths.projectsDir).filter(f => f.endsWith('.json'))
+  for (const f of files) {
+    const config = JSON.parse(fs.readFileSync(path.join(paths.projectsDir, f), 'utf8'))
+    if (config.projectPath && path.resolve(config.projectPath) === path.resolve(dir)) {
+      return config
+    }
   }
-  const link = JSON.parse(fs.readFileSync(linkPath, 'utf8'))
-  const result = validateLink(link)
-  if (!result.valid) {
-    throw new Error(`Invalid .procyon link: ${result.errors.join(', ')}`)
-  }
-  return getProject(link.project)
-}
-
-function saveLink (projectName, dir) {
-  const linkPath = path.join(dir || process.cwd(), LINK_FILE)
-  fs.writeFileSync(linkPath, JSON.stringify({ project: projectName }, null, 2) + '\n')
+  return null
 }
 
 function getEnvironment (projectName, envName) {
@@ -84,6 +78,5 @@ module.exports = {
   listProjects,
   removeProject,
   getProjectFromCwd,
-  saveLink,
   getEnvironment
 }
