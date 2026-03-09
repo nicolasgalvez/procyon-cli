@@ -1,7 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 const { prompt } = require('enquirer')
-const { saveProject, saveLink, getProjectFromCwd } = require('../src/config/store')
+const { saveProject, getProjectFromCwd } = require('../src/config/store')
 
 module.exports = {
   command: 'init',
@@ -128,6 +128,7 @@ module.exports = {
 
     const config = {
       name: projectName,
+      projectPath: process.cwd(),
       localPath,
       wpCli,
       environments
@@ -138,10 +139,8 @@ module.exports = {
     }
 
     const configPath = saveProject(projectName, config)
-    saveLink(projectName)
 
     console.log(`\nCreated ${configPath}`)
-    console.log('Created .procyon in current directory')
 
     if (Object.keys(environments).length > 0) {
       const firstEnv = Object.keys(environments)[0]

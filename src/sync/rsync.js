@@ -2,6 +2,7 @@ const { spawn } = require('child_process')
 const os = require('os')
 const path = require('path')
 const fs = require('fs')
+const { lookupSshHost } = require('../ssh-config')
 
 const DEFAULT_EXCLUDE_FILE = path.join(__dirname, '../../bin/rsync-exclude')
 
@@ -11,7 +12,22 @@ class RsyncTransfer {
     this.env = environment
   }
 
+  /**
+   * Check if the host has an SSH config alias, meaning SSH will
+   * handle user/port/key resolution on its own.
+   */
+  hasSshAlias () {
+    if (this._hasSshAlias === undefined) {
+      this._hasSshAlias = !!lookupSshHost(this.env.host)
+    }
+    return this._hasSshAlias
+  }
+
   buildSshCommand () {
+    // If SSH config has this host, let it handle port/key
+    if (this.hasSshAlias()) {
+      return 'ssh'
+    }
     const { port, identityFile } = this.env
     let ssh = `ssh -p ${port || 22}`
     if (identityFile) {
@@ -22,9 +38,13 @@ class RsyncTransfer {
   }
 
   buildRemote (subpath) {
-    const { user, host, path: remotePath } = this.env
+    const { host, path: remotePath } = this.env
     const full = subpath ? `${remotePath}/${subpath}` : remotePath
-    return `${user}@${host}:${full}`
+    // If SSH config defines the user, let it handle it
+    if (this.hasSshAlias()) {
+      return `${host}:${full}`
+    }
+    return `${this.env.user}@${host}:${full}`
   }
 
   buildLocal (subpath) {
@@ -135,11 +155,17 @@ class RsyncTransfer {
    */
   async ssh (command) {
     const { user, host, port, identityFile } = this.env
-    const args = ['-p', String(port || 22)]
-    if (identityFile) {
-      args.push('-i', identityFile.replace('~', os.homedir()))
+    const args = []
+    if (this.hasSshAlias()) {
+      // Let SSH config handle user/port/key
+      args.push(host, command)
+    } else {
+      args.push('-p', String(port || 22))
+      if (identityFile) {
+        args.push('-i', identityFile.replace('~', os.homedir()))
+      }
+      args.push(`${user}@${host}`, command)
     }
-    args.push(`${user}@${host}`, command)
 
     return new Promise((resolve, reject) => {
       const child = spawn('ssh', args, { stdio: 'inherit' })

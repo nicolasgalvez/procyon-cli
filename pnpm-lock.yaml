@@ -14,6 +14,9 @@ importers:
       enquirer:
         specifier: ^2.3.6
         version: 2.4.1
+      ssh-config:
+        specifier: ^5.1.0
+        version: 5.1.0
       yargs:
         specifier: ^17.7.2
         version: 17.7.2
@@ -1189,6 +1192,9 @@ packages:
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
+
+  ssh-config@5.1.0:
+    resolution: {integrity: sha512-z4fFE4MgCja706ajwYOg6uptS3BIu0TWSUj08UWLuwNB/awVktEA5LyOgIAmgazyDjyTULhlL2GaBv37k4zoxQ==}
 
   stackback@0.0.2:
     resolution: {integrity: sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==}
@@ -2571,6 +2577,8 @@ snapshots:
   siginfo@2.0.0: {}
 
   source-map-js@1.2.1: {}
+
+  ssh-config@5.1.0: {}
 
   stackback@0.0.2: {}
 
