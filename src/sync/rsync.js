@@ -216,6 +216,14 @@ function ensureTrailingSlash (p) {
 /**
  * Parse rsync --itemize-changes output into structured changes
  */
+/**
+ * Parse rsync --itemize-changes output into structured changes.
+ *
+ * Rsync itemize format: YXcstpoguax  path/to/file
+ *   Y = update type: < sent, > received, c local change, h hard link, . unchanged
+ *   X = file type: f file, d directory, L symlink, etc.
+ *   +++ = new item
+ */
 function parseItemizedChanges (output) {
   const added = []
   const modified = []
@@ -227,11 +235,14 @@ function parseItemizedChanges (output) {
 
     if (trimmed.startsWith('*deleting')) {
       deleted.push(trimmed.replace('*deleting   ', ''))
-    } else if (trimmed.startsWith('>f+++')) {
+    } else if (/^[<>c]f\+{9}/.test(trimmed)) {
+      // New file (sent, received, or local)
       added.push(trimmed.substring(12).trim())
-    } else if (trimmed.startsWith('>f')) {
+    } else if (/^[<>c]f/.test(trimmed)) {
+      // Modified file
       modified.push(trimmed.substring(12).trim())
-    } else if (trimmed.startsWith('cd+++')) {
+    } else if (/^[<>c.]d\+{9}/.test(trimmed)) {
+      // New directory
       added.push(trimmed.substring(12).trim())
     }
   }

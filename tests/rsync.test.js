@@ -166,6 +166,18 @@ describe('parseItemizedChanges', () => {
     expect(result.deleted).toEqual(['old.txt'])
   })
 
+  it('parses push direction (< prefix)', () => {
+    const output = [
+      '<f+++++++++ new-theme.css',
+      '<f.st...... functions.php',
+      'cd+++++++++ assets/fonts/'
+    ].join('\n')
+
+    const result = parseItemizedChanges(output)
+    expect(result.added).toEqual(['new-theme.css', 'assets/fonts/'])
+    expect(result.modified).toEqual(['functions.php'])
+  })
+
   it('handles empty output', () => {
     const result = parseItemizedChanges('')
     expect(result.added).toEqual([])
