@@ -11,24 +11,23 @@ function getTimestamp () {
 }
 
 /**
- * Create a backup of the remote state before pushing
+ * Create a backup of the remote state before pushing.
+ * @param {string} subpath - The remote subpath to back up (e.g. 'wp-content/themes/mytheme' or 'static')
+ * @param {string} label - Display label for the backup directory name
  */
-async function createBackup (rsync, project, envName, item, itemName) {
+async function createBackup (rsync, project, envName, subpath, label) {
   const timestamp = getTimestamp()
-  const subpath = itemName
-    ? `wp-content/${item}/${itemName}`
-    : `wp-content/${item}`
 
-  const backupDir = path.join(getBackupDir(project.name, envName, item), timestamp)
+  const backupDir = path.join(getBackupDir(project.name, envName, label), timestamp)
   fs.mkdirSync(backupDir, { recursive: true })
 
-  console.log(`Backing up remote ${item} to ${backupDir}...`)
+  console.log(`Backing up remote ${label} to ${backupDir}...`)
 
   const backupProject = { ...project, localPath: backupDir }
   const { RsyncTransfer } = require('./rsync')
   const backupRsync = new RsyncTransfer(backupProject, rsync.env)
 
-  await backupRsync.pull(subpath, item)
+  await backupRsync.pull(subpath, label)
 
   console.log('Backup complete.')
   return { timestamp, path: backupDir }

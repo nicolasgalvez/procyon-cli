@@ -1,3 +1,5 @@
+const path = require('path')
+const fs = require('fs')
 const { RsyncTransfer } = require('../../src/sync/rsync')
 const { getEnvironment } = require('../../src/config/store')
 const { createBackup } = require('../../src/sync/backup')
@@ -11,7 +13,7 @@ const ITEM_PATHS = {
 
 module.exports = {
   command: 'push <target> [item] [--name]',
-  describe: 'Push uploads, themes, or plugins to an environment.',
+  describe: 'Push files to an environment. Use item shortcuts (themes/plugins/uploads) or --path for any directory.',
   builder: {
     target: {
       demandOption: true
@@ -23,6 +25,10 @@ module.exports = {
     name: {
       type: 'string',
       describe: 'Push a single theme or plugin by name'
+    },
+    path: {
+      type: 'string',
+      describe: 'Push an arbitrary directory path (relative to WP root)'
     },
     'dry-run': {
       type: 'boolean',
@@ -49,20 +55,37 @@ module.exports = {
     }
 
     const rsync = new RsyncTransfer(project, env)
-    const items = argv.item === 'all' ? ['themes', 'plugins', 'uploads'] : [argv.item]
 
-    for (const item of items) {
-      let subpath = ITEM_PATHS[item]
-      if (argv.name) {
-        subpath = `${subpath}/${argv.name}`
+    // Build list of subpaths to push
+    const subpaths = []
+    if (argv.path) {
+      if (path.isAbsolute(argv.path)) {
+        console.error(`--path must be relative to localPath (${project.localPath})`)
+        process.exit(1)
       }
+      const fullPath = path.join(project.localPath, argv.path)
+      if (!fs.existsSync(fullPath)) {
+        console.error(`Path not found: ${fullPath}`)
+        console.error(`--path must be relative to localPath (${project.localPath})`)
+        process.exit(1)
+      }
+      subpaths.push({ subpath: argv.path, label: argv.path, useDelete: true })
+    } else {
+      const items = argv.item === 'all' ? ['themes', 'plugins', 'uploads'] : [argv.item]
+      for (const item of items) {
+        let subpath = ITEM_PATHS[item]
+        if (argv.name) subpath = `${subpath}/${argv.name}`
+        subpaths.push({ subpath, label: `${item}${argv.name ? ` (${argv.name})` : ''}`, useDelete: item !== 'uploads' })
+      }
+    }
 
+    for (const { subpath, label, useDelete } of subpaths) {
       // Show diff preview before pushing (unless --force or --dry-run)
       if (!argv.force && !argv.dryRun) {
-        console.log(`\nPreviewing changes for ${item}${argv.name ? ` (${argv.name})` : ''}...`)
+        console.log(`\nPreviewing changes for ${label}...`)
         try {
           const changes = await rsync.dryRun(subpath, subpath, {
-            delete: item !== 'uploads'
+            delete: useDelete
           })
 
           if (changes.added.length === 0 && changes.modified.length === 0 && changes.deleted.length === 0) {
@@ -90,8 +113,9 @@ module.exports = {
 
       // Backup before pushing (unless --no-backup or --dry-run)
       if (!argv.noBackup && !argv.dryRun) {
+        const backupLabel = argv.path ? argv.path.replace(/\//g, '-') : subpath.split('/').pop()
         try {
-          await createBackup(rsync, project, argv.target, item, argv.name)
+          await createBackup(rsync, project, argv.target, subpath, backupLabel)
         } catch (error) {
           console.error(`Backup failed: ${error.message}`)
           const { proceed } = await prompt({
@@ -104,15 +128,15 @@ module.exports = {
         }
       }
 
-      console.log(`Pushing ${item}${argv.name ? ` (${argv.name})` : ''}...`)
+      console.log(`Pushing ${label}...`)
 
       try {
         await rsync.push(subpath, subpath, {
           dryRun: argv.dryRun,
-          delete: item !== 'uploads'
+          delete: useDelete
         })
       } catch (error) {
-        console.error(`Error pushing ${item}:`, error.message)
+        console.error(`Error pushing ${label}:`, error.message)
       }
     }
   }

@@ -1,3 +1,4 @@
+const path = require('path')
 const { RsyncTransfer } = require('../../src/sync/rsync')
 const { getEnvironment } = require('../../src/config/store')
 
@@ -9,7 +10,7 @@ const ITEM_PATHS = {
 
 module.exports = {
   command: 'pull <target> [item] [--name]',
-  describe: 'Pull uploads, themes, or plugins from an environment.',
+  describe: 'Pull files from an environment. Use item shortcuts (themes/plugins/uploads) or --path for any directory.',
   builder: {
     target: {
       demandOption: true
@@ -21,6 +22,10 @@ module.exports = {
     name: {
       type: 'string',
       describe: 'Pull a single theme or plugin by name'
+    },
+    path: {
+      type: 'string',
+      describe: 'Pull an arbitrary directory path (relative to WP root)'
     },
     'dry-run': {
       type: 'boolean',
@@ -37,23 +42,34 @@ module.exports = {
     }
 
     const rsync = new RsyncTransfer(project, env)
-    const items = argv.item === 'all' ? ['themes', 'plugins', 'uploads'] : [argv.item]
 
-    for (const item of items) {
-      let subpath = ITEM_PATHS[item]
-      if (argv.name) {
-        subpath = `${subpath}/${argv.name}`
+    // Build list of subpaths to pull
+    const subpaths = []
+    if (argv.path) {
+      if (path.isAbsolute(argv.path)) {
+        console.error(`--path must be relative to localPath (${project.localPath})`)
+        process.exit(1)
       }
+      subpaths.push({ subpath: argv.path, label: argv.path, useDelete: true })
+    } else {
+      const items = argv.item === 'all' ? ['themes', 'plugins', 'uploads'] : [argv.item]
+      for (const item of items) {
+        let subpath = ITEM_PATHS[item]
+        if (argv.name) subpath = `${subpath}/${argv.name}`
+        subpaths.push({ subpath, label: `${item}${argv.name ? ` (${argv.name})` : ''}`, useDelete: item !== 'uploads' })
+      }
+    }
 
-      console.log(`Pulling ${item}${argv.name ? ` (${argv.name})` : ''}...`)
+    for (const { subpath, label, useDelete } of subpaths) {
+      console.log(`Pulling ${label}...`)
 
       try {
         await rsync.pull(subpath, subpath, {
           dryRun: argv.dryRun,
-          delete: item !== 'uploads'
+          delete: useDelete
         })
       } catch (error) {
-        console.error(`Error pulling ${item}:`, error.message)
+        console.error(`Error pulling ${label}:`, error.message)
       }
     }
   }
