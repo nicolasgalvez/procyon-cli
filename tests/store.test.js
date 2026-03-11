@@ -26,7 +26,8 @@ describe('config store', () => {
 
   const validConfig = {
     name: 'test-site',
-    localPath: '/Users/test/Sites/test-site',
+    projectPath: '/Users/test/Sites/test-site',
+    localPath: '/Users/test/Sites/test-site/public',
     environments: {
       staging: {
         host: 'staging.example.com',
@@ -83,26 +84,19 @@ describe('config store', () => {
   })
 
   describe('getProjectFromCwd', () => {
-    it('loads project from .procyon link file', () => {
-      store.saveProject('test-site', validConfig)
-      const linkPath = path.join(tmpDir, '.procyon')
-      fs.writeFileSync(linkPath, JSON.stringify({ project: 'test-site' }))
+    it('finds project by matching projectPath to cwd', () => {
+      const projectDir = path.join(tmpDir, 'my-project')
+      fs.mkdirSync(projectDir)
+      const config = { ...validConfig, projectPath: projectDir }
+      store.saveProject('test-site', config)
 
-      const project = store.getProjectFromCwd(tmpDir)
-      expect(project).toEqual(validConfig)
+      const project = store.getProjectFromCwd(projectDir)
+      expect(project).toEqual(config)
     })
 
-    it('returns null when no .procyon file exists', () => {
+    it('returns null when no project matches cwd', () => {
+      store.ensureConfigDir()
       expect(store.getProjectFromCwd(tmpDir)).toBeNull()
-    })
-  })
-
-  describe('saveLink', () => {
-    it('creates a .procyon link file', () => {
-      store.saveLink('my-project', tmpDir)
-      const linkPath = path.join(tmpDir, '.procyon')
-      const link = JSON.parse(fs.readFileSync(linkPath, 'utf8'))
-      expect(link.project).toBe('my-project')
     })
   })
 

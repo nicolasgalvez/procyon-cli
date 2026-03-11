@@ -1,7 +1,8 @@
 const fs = require('fs')
 const path = require('path')
 const { prompt } = require('enquirer')
-const { saveProject, saveLink } = require('../src/config/store')
+const { saveProject } = require('../src/config/store')
+const { lookupSshHost } = require('../src/ssh-config')
 
 module.exports = {
   command: 'migrate',
@@ -60,6 +61,7 @@ module.exports = {
 
     const config = {
       name: projectName,
+      projectPath: process.cwd(),
       localPath,
       localDomain: envConfig.LOCAL_DOMAIN || undefined,
       wpCli: envConfig.LOCAL_DOMAIN?.includes('lndo') ? 'lando wp' : 'wp',
@@ -87,10 +89,8 @@ module.exports = {
     }
 
     const configPath = saveProject(projectName, config)
-    saveLink(projectName)
 
     console.log(`\nCreated ${configPath}`)
-    console.log('Created .procyon in current directory')
 
     const { deleteEnv } = await prompt({
       type: 'confirm',
@@ -130,6 +130,7 @@ function parseEnvFile (content) {
 function parseSSHString (sshString) {
   let user, host
   let port = 22
+  let identityFile
 
   if (sshString.includes('@')) {
     const [userPart, hostPart] = sshString.split('@')
@@ -146,5 +147,15 @@ function parseSSHString (sshString) {
     user = require('os').userInfo().username
   }
 
-  return { host, user, port }
+  // Check ~/.ssh/config for this host alias — overrides defaults
+  const sshEntry = lookupSshHost(host)
+  if (sshEntry) {
+    if (sshEntry.user) user = sshEntry.user
+    if (sshEntry.port) port = sshEntry.port
+    if (sshEntry.identityFile) identityFile = sshEntry.identityFile
+  }
+
+  const result = { host, user, port }
+  if (identityFile) result.identityFile = identityFile
+  return result
 }

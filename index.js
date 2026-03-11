@@ -39,7 +39,7 @@ function loadProjectMiddleware (argv) {
 
   const project = getProjectFromCwd()
   if (!project) {
-    console.error('No .procyon link found in this directory.')
+    console.error('No project config found for this directory.')
     console.error('Run `procyon init` to set up a project.')
     process.exit(1)
   }
