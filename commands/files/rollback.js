@@ -22,6 +22,10 @@ module.exports = {
     to: {
       type: 'string',
       describe: 'Timestamp of the backup to restore'
+    },
+    y: {
+      type: 'boolean',
+      describe: 'Skip confirmation prompt'
     }
   },
   handler: async (argv) => {
@@ -55,13 +59,14 @@ module.exports = {
       process.exit(1)
     }
 
-    const { confirm } = await prompt({
-      type: 'confirm',
-      name: 'confirm',
-      message: `Restore ${argv.item} on ${argv.target} from backup ${argv.to}?`
-    })
-
-    if (!confirm) return
+    if (!argv.y) {
+      const { confirm } = await prompt({
+        type: 'confirm',
+        name: 'confirm',
+        message: `Restore ${argv.item} on ${argv.target} from backup ${argv.to}?`
+      })
+      if (!confirm) return
+    }
 
     // Push the backup dir contents to remote
     const backupProject = { ...project, localPath: backupDir }

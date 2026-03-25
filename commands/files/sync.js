@@ -38,6 +38,10 @@ module.exports = {
       type: 'boolean',
       default: false,
       describe: 'Preview changes without transferring'
+    },
+    y: {
+      type: 'boolean',
+      describe: 'Skip confirmation prompt, sync all'
     }
   },
   handler: async (argv) => {
@@ -125,28 +129,31 @@ module.exports = {
         continue
       }
 
-      // Let user select which plugins to sync
-      const choices = plan.map(({ plugin, direction }) => ({
-        name: plugin,
-        message: `${direction === 'pull' ? '↓' : '↑'} ${plugin} (${direction})`,
-        value: plugin
-      }))
+      let selectedPlan = plan
 
-      const { selected } = await prompt({
-        type: 'multiselect',
-        name: 'selected',
-        message: 'Select plugins to sync:',
-        choices,
-        initial: choices.map(c => c.name)
-      })
+      if (!argv.y) {
+        // Let user select which plugins to sync
+        const choices = plan.map(({ plugin, direction }) => ({
+          name: plugin,
+          message: `${direction === 'pull' ? '↓' : '↑'} ${plugin} (${direction})`,
+          value: plugin
+        }))
 
-      if (selected.length === 0) {
-        console.log('Nothing selected.')
-        continue
+        const { selected } = await prompt({
+          type: 'multiselect',
+          name: 'selected',
+          message: 'Select plugins to sync:',
+          choices,
+          initial: choices.map(c => c.name)
+        })
+
+        if (selected.length === 0) {
+          console.log('Nothing selected.')
+          continue
+        }
+
+        selectedPlan = plan.filter(p => selected.includes(p.plugin))
       }
-
-      // Execute syncs
-      const selectedPlan = plan.filter(p => selected.includes(p.plugin))
       for (const { plugin, direction } of selectedPlan) {
         const subpath = `${pluginDir}/${plugin}`
         const rsyncOpts = { delete: true, noDefaultExclude: true, excludeArgs }

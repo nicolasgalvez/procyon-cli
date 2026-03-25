@@ -35,10 +35,9 @@ module.exports = {
       describe: 'Preview changes without transferring',
       default: false
     },
-    force: {
+    y: {
       type: 'boolean',
-      describe: 'Skip confirmation prompt',
-      default: false
+      describe: 'Skip confirmation prompts'
     },
     'no-backup': {
       type: 'boolean',
@@ -81,7 +80,7 @@ module.exports = {
 
     for (const { subpath, label, useDelete } of subpaths) {
       // Show diff preview before pushing (unless --force or --dry-run)
-      if (!argv.force && !argv.dryRun) {
+      if (!argv.y && !argv.dryRun) {
         console.log(`\nPreviewing changes for ${label}...`)
         try {
           const changes = await rsync.dryRun(subpath, subpath, {
@@ -118,13 +117,15 @@ module.exports = {
           await createBackup(rsync, project, argv.target, subpath, backupLabel)
         } catch (error) {
           console.error(`Backup failed: ${error.message}`)
-          const { proceed } = await prompt({
-            type: 'confirm',
-            name: 'proceed',
-            message: 'Backup failed. Continue without backup?',
-            initial: false
-          })
-          if (!proceed) continue
+          if (!argv.y) {
+            const { proceed } = await prompt({
+              type: 'confirm',
+              name: 'proceed',
+              message: 'Backup failed. Continue without backup?',
+              initial: false
+            })
+            if (!proceed) continue
+          }
         }
       }
 
