@@ -1,5 +1,5 @@
 const path = require('path')
-const { RsyncTransfer } = require('../../src/sync/rsync')
+const { RsyncTransfer, ConnectionError, displayDiff } = require('../../src/sync/rsync')
 const { getEnvironment } = require('../../src/config/store')
 
 const ITEM_PATHS = {
@@ -9,7 +9,7 @@ const ITEM_PATHS = {
 }
 
 module.exports = {
-  command: 'pull <target> [item] [--name]',
+  command: 'pull <target> [item] [name]',
   describe: 'Pull files from an environment. Use item shortcuts (themes/plugins/uploads) or --path for any directory.',
   builder: {
     target: {
@@ -61,15 +61,34 @@ module.exports = {
     }
 
     for (const { subpath, label, useDelete } of subpaths) {
+      // --dry-run: show parsed diff and stop
+      if (argv.dryRun) {
+        console.log(`\nDry run for ${label}:`)
+        try {
+          const changes = await rsync.dryRun(subpath, subpath, {
+            direction: 'pull',
+            delete: useDelete
+          })
+          displayDiff(changes, 'pull')
+        } catch (error) {
+          console.error(`Error: ${error.message}`)
+          if (error instanceof ConnectionError) process.exit(1)
+        }
+        continue
+      }
+
       console.log(`Pulling ${label}...`)
 
       try {
         await rsync.pull(subpath, subpath, {
-          dryRun: argv.dryRun,
           delete: useDelete
         })
       } catch (error) {
         console.error(`Error pulling ${label}:`, error.message)
+        if (error instanceof ConnectionError) {
+          console.error('Connection failed. Aborting.')
+          process.exit(1)
+        }
       }
     }
   }

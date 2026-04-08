@@ -29,7 +29,8 @@ module.exports = {
       for (const { name, config } of projects) {
         const envs = Object.keys(config.environments || {}).join(', ')
         console.log(`  ${name}`)
-        console.log(`    Path: ${config.localPath}`)
+        console.log(`    Project: ${config.projectPath}`)
+        console.log(`    Webroot: ${config.localPath}`)
         console.log(`    Environments: ${envs || 'none'}`)
         console.log()
       }

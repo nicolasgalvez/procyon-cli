@@ -6,6 +6,19 @@ const { lookupSshHost } = require('../ssh-config')
 
 const DEFAULT_EXCLUDE_FILE = path.join(__dirname, '../../bin/rsync-exclude')
 
+class ConnectionError extends Error {
+  constructor (code) {
+    super(`Connection failed (rsync exited with code ${code})`)
+    this.name = 'ConnectionError'
+    this.exitCode = code
+  }
+}
+
+function rsyncError (code) {
+  if (code === 255) return new ConnectionError(code)
+  return new Error(`rsync exited with code ${code}`)
+}
+
 class RsyncTransfer {
   constructor (project, environment) {
     this.project = project
@@ -160,7 +173,7 @@ class RsyncTransfer {
 
       child.on('close', (code) => {
         if (code !== 0) {
-          reject(new Error(`rsync exited with code ${code}`))
+          reject(rsyncError(code))
           return
         }
         resolve(parseItemizedChanges(output))
@@ -220,7 +233,7 @@ class RsyncTransfer {
 
       child.on('close', (code) => {
         if (code !== 0) {
-          reject(new Error(`rsync exited with code ${code}`))
+          reject(rsyncError(code))
           return
         }
         resolve(options.capture ? output : undefined)
@@ -276,4 +289,35 @@ function parseItemizedChanges (output) {
   return { added, modified, deleted }
 }
 
-module.exports = { RsyncTransfer, parseItemizedChanges, shellQuote }
+/**
+ * Print a human-readable diff summary.
+ * direction: 'push' (local overwrites remote) or 'pull' (remote overwrites local)
+ */
+function displayDiff (changes, direction = 'push') {
+  const arrow = direction === 'push' ? '⬆️' : '⬇️'
+  const target = direction === 'push' ? 'remote' : 'local'
+
+  if (changes.added.length === 0 && changes.modified.length === 0 && changes.deleted.length === 0) {
+    console.log('No changes.')
+    return false
+  }
+
+  console.log()
+  if (changes.added.length > 0) {
+    console.log(`  ${arrow}  New files (will be added to ${target}):`)
+    for (const f of changes.added) console.log(`       + ${f}`)
+  }
+  if (changes.modified.length > 0) {
+    console.log(`  ${arrow}  Modified files (will overwrite ${target}):`)
+    for (const f of changes.modified) console.log(`       ✏️  ${f}`)
+  }
+  if (changes.deleted.length > 0) {
+    console.log(`  🗑️  Deleted files (will be removed from ${target}):`)
+    for (const f of changes.deleted) console.log(`       - ${f}`)
+  }
+
+  console.log(`\n  ${changes.added.length} added, ${changes.modified.length} modified, ${changes.deleted.length} deleted`)
+  return true
+}
+
+module.exports = { RsyncTransfer, ConnectionError, parseItemizedChanges, displayDiff, shellQuote }

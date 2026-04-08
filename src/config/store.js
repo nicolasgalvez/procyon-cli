@@ -70,6 +70,36 @@ function getEnvironment (projectName, envName) {
   return project.environments[envName] || null
 }
 
+function addEnvironment (projectName, envName, envConfig) {
+  const project = getProject(projectName)
+  if (!project) throw new Error(`Project "${projectName}" not found`)
+  if (project.environments[envName]) {
+    throw new Error(`Environment "${envName}" already exists in project "${projectName}"`)
+  }
+  project.environments[envName] = envConfig
+  saveProject(projectName, project)
+}
+
+function updateEnvironment (projectName, envName, envConfig) {
+  const project = getProject(projectName)
+  if (!project) throw new Error(`Project "${projectName}" not found`)
+  if (!project.environments[envName]) {
+    throw new Error(`Environment "${envName}" not found in project "${projectName}"`)
+  }
+  project.environments[envName] = { ...project.environments[envName], ...envConfig }
+  saveProject(projectName, project)
+}
+
+function removeEnvironment (projectName, envName) {
+  const project = getProject(projectName)
+  if (!project) throw new Error(`Project "${projectName}" not found`)
+  if (!project.environments[envName]) {
+    throw new Error(`Environment "${envName}" not found in project "${projectName}"`)
+  }
+  delete project.environments[envName]
+  saveProject(projectName, project)
+}
+
 module.exports = {
   paths,
   ensureConfigDir,
@@ -78,5 +108,8 @@ module.exports = {
   listProjects,
   removeProject,
   getProjectFromCwd,
-  getEnvironment
+  getEnvironment,
+  addEnvironment,
+  updateEnvironment,
+  removeEnvironment
 }
