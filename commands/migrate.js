@@ -11,6 +11,10 @@ module.exports = {
     env: {
       default: '.env',
       describe: 'Path to .env file'
+    },
+    y: {
+      type: 'boolean',
+      describe: 'Skip confirmation prompts'
     }
   },
   handler: async (argv) => {
@@ -28,35 +32,45 @@ module.exports = {
       console.log(`  ${key}: ${value}`)
     })
 
-    const { confirm } = await prompt({
-      type: 'confirm',
-      name: 'confirm',
-      message: 'Import this configuration?'
-    })
+    if (!argv.y) {
+      const { confirm } = await prompt({
+        type: 'confirm',
+        name: 'confirm',
+        message: 'Import this configuration?'
+      })
 
-    if (!confirm) {
-      console.log('Migration cancelled.')
-      return
+      if (!confirm) {
+        console.log('Migration cancelled.')
+        return
+      }
     }
 
-    const { projectName } = await prompt({
-      type: 'input',
-      name: 'projectName',
-      message: 'Project name:',
-      initial: envConfig.SITE_NAME || path.basename(process.cwd())
-    })
+    let projectName = envConfig.SITE_NAME || path.basename(process.cwd())
+    if (!argv.y) {
+      const answer = await prompt({
+        type: 'input',
+        name: 'projectName',
+        message: 'Project name:',
+        initial: projectName
+      })
+      projectName = answer.projectName
+    }
 
     console.log('\nParsing SSH strings...')
 
     let localPath = envConfig.LOCAL_PATH
     if (!localPath) {
-      const answer = await prompt({
-        type: 'input',
-        name: 'localPath',
-        message: 'LOCAL_PATH not found in .env. Enter local WordPress path:',
-        initial: process.cwd()
-      })
-      localPath = answer.localPath
+      if (argv.y) {
+        localPath = process.cwd()
+      } else {
+        const answer = await prompt({
+          type: 'input',
+          name: 'localPath',
+          message: 'LOCAL_PATH not found in .env. Enter local WordPress path:',
+          initial: process.cwd()
+        })
+        localPath = answer.localPath
+      }
     }
 
     const config = {
@@ -92,18 +106,22 @@ module.exports = {
 
     console.log(`\nCreated ${configPath}`)
 
-    const { deleteEnv } = await prompt({
-      type: 'confirm',
-      name: 'deleteEnv',
-      message: 'Delete old .env file?',
-      initial: false
-    })
-
-    if (deleteEnv) {
-      fs.unlinkSync(envPath)
-      console.log('Deleted .env')
-    } else {
+    if (argv.y) {
       console.log('  (keeping .env as backup)')
+    } else {
+      const { deleteEnv } = await prompt({
+        type: 'confirm',
+        name: 'deleteEnv',
+        message: 'Delete old .env file?',
+        initial: false
+      })
+
+      if (deleteEnv) {
+        fs.unlinkSync(envPath)
+        console.log('Deleted .env')
+      } else {
+        console.log('  (keeping .env as backup)')
+      }
     }
 
     console.log('\nMigration complete!')
