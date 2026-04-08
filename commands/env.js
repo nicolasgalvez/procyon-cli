@@ -46,7 +46,6 @@ module.exports = {
     yargs.option('y', { type: 'boolean', describe: 'Skip confirmation prompts' })
   },
   handler: async (argv) => {
-
     const projectName = resolveProject(argv)
     if (!projectName) {
       console.error('No project found. Run from a project directory or use `procyon init`.')
