@@ -14,16 +14,28 @@ function lookupSshHost (host, configPath) {
   const config = SSHConfig.parse(fs.readFileSync(configPath, 'utf8'))
   const computed = config.compute(host)
 
+  // SSH config keys are case-insensitive; the library preserves
+  // whatever casing the user wrote (HostName vs Hostname, etc.)
+  const get = (key) => {
+    const lower = key.toLowerCase()
+    const match = Object.keys(computed).find(k => k.toLowerCase() === lower)
+    return match ? computed[match] : undefined
+  }
+
   // If no Hostname was resolved, the host wasn't explicitly defined
-  if (!computed.Hostname) return null
+  const hostname = get('hostname')
+  if (!hostname) return null
+
+  const identityFile = get('identityfile')
+  const port = get('port')
 
   return {
-    hostname: computed.Hostname || null,
-    user: computed.User || null,
-    port: computed.Port ? parseInt(computed.Port) : null,
-    identityFile: Array.isArray(computed.IdentityFile)
-      ? computed.IdentityFile[0]
-      : computed.IdentityFile || null
+    hostname,
+    user: get('user') || null,
+    port: port ? parseInt(port) : null,
+    identityFile: Array.isArray(identityFile)
+      ? identityFile[0]
+      : identityFile || null
   }
 }
 

@@ -1,6 +1,6 @@
 const path = require('path')
 const fs = require('fs')
-const { RsyncTransfer } = require('../../src/sync/rsync')
+const { RsyncTransfer, ConnectionError, displayDiff } = require('../../src/sync/rsync')
 const { getEnvironment } = require('../../src/config/store')
 const { createBackup } = require('../../src/sync/backup')
 const { prompt } = require('enquirer')
@@ -12,7 +12,7 @@ const ITEM_PATHS = {
 }
 
 module.exports = {
-  command: 'push <target> [item] [--name]',
+  command: 'push <target> [item] [name]',
   describe: 'Push files to an environment. Use item shortcuts (themes/plugins/uploads) or --path for any directory.',
   builder: {
     target: {
@@ -35,10 +35,9 @@ module.exports = {
       describe: 'Preview changes without transferring',
       default: false
     },
-    force: {
+    y: {
       type: 'boolean',
-      describe: 'Skip confirmation prompt',
-      default: false
+      describe: 'Skip confirmation prompts'
     },
     'no-backup': {
       type: 'boolean',
@@ -80,20 +79,31 @@ module.exports = {
     }
 
     for (const { subpath, label, useDelete } of subpaths) {
-      // Show diff preview before pushing (unless --force or --dry-run)
-      if (!argv.force && !argv.dryRun) {
+      // --dry-run: show parsed diff and stop
+      if (argv.dryRun) {
+        console.log(`\nDry run for ${label}:`)
+        try {
+          const changes = await rsync.dryRun(subpath, subpath, { delete: useDelete })
+          displayDiff(changes, 'push')
+        } catch (error) {
+          console.error(`Error: ${error.message}`)
+          if (error instanceof ConnectionError) process.exit(1)
+        }
+        continue
+      }
+
+      // Show diff preview before pushing (unless -y)
+      if (!argv.y) {
         console.log(`\nPreviewing changes for ${label}...`)
         try {
           const changes = await rsync.dryRun(subpath, subpath, {
             delete: useDelete
           })
 
-          if (changes.added.length === 0 && changes.modified.length === 0 && changes.deleted.length === 0) {
+          if (!displayDiff(changes, 'push')) {
             console.log('No changes to push.')
             continue
           }
-
-          displayDiff(changes)
 
           const { confirm } = await prompt({
             type: 'confirm',
@@ -107,24 +117,34 @@ module.exports = {
           }
         } catch (error) {
           console.error(`Error generating preview: ${error.message}`)
+          if (error instanceof ConnectionError) {
+            console.error('Connection failed. Aborting.')
+            process.exit(1)
+          }
           console.error('Continuing without preview...')
         }
       }
 
-      // Backup before pushing (unless --no-backup or --dry-run)
-      if (!argv.noBackup && !argv.dryRun) {
+      // Backup before pushing (unless --no-backup)
+      if (!argv.noBackup) {
         const backupLabel = argv.path ? argv.path.replace(/\//g, '-') : subpath.split('/').pop()
         try {
           await createBackup(rsync, project, argv.target, subpath, backupLabel)
         } catch (error) {
           console.error(`Backup failed: ${error.message}`)
-          const { proceed } = await prompt({
-            type: 'confirm',
-            name: 'proceed',
-            message: 'Backup failed. Continue without backup?',
-            initial: false
-          })
-          if (!proceed) continue
+          if (error instanceof ConnectionError) {
+            console.error('Connection failed. Aborting.')
+            process.exit(1)
+          }
+          if (!argv.y) {
+            const { proceed } = await prompt({
+              type: 'confirm',
+              name: 'proceed',
+              message: 'Backup failed. Continue without backup?',
+              initial: false
+            })
+            if (!proceed) continue
+          }
         }
       }
 
@@ -132,22 +152,15 @@ module.exports = {
 
       try {
         await rsync.push(subpath, subpath, {
-          dryRun: argv.dryRun,
           delete: useDelete
         })
       } catch (error) {
         console.error(`Error pushing ${label}:`, error.message)
+        if (error instanceof ConnectionError) {
+          console.error('Connection failed. Aborting.')
+          process.exit(1)
+        }
       }
     }
   }
-}
-
-function displayDiff (changes) {
-  console.log('\nChanges to be pushed:\n')
-
-  for (const f of changes.added) console.log(`  + ${f}`)
-  for (const f of changes.modified) console.log(`  M ${f}`)
-  for (const f of changes.deleted) console.log(`  - ${f}`)
-
-  console.log(`\n${changes.added.length} added, ${changes.modified.length} modified, ${changes.deleted.length} deleted`)
 }

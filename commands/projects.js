@@ -12,6 +12,10 @@ module.exports = {
     name: {
       type: 'string',
       describe: 'Project name (for remove)'
+    },
+    y: {
+      type: 'boolean',
+      describe: 'Skip confirmation prompt'
     }
   },
   handler: async (argv) => {
@@ -25,7 +29,8 @@ module.exports = {
       for (const { name, config } of projects) {
         const envs = Object.keys(config.environments || {}).join(', ')
         console.log(`  ${name}`)
-        console.log(`    Path: ${config.localPath}`)
+        console.log(`    Project: ${config.projectPath}`)
+        console.log(`    Webroot: ${config.localPath}`)
         console.log(`    Environments: ${envs || 'none'}`)
         console.log()
       }
@@ -47,18 +52,19 @@ module.exports = {
         console.error('Specify a project name: procyon projects remove --name <name>')
         process.exit(1)
       }
-      const { confirm } = await prompt({
-        type: 'confirm',
-        name: 'confirm',
-        message: `Remove project "${name}"?`,
-        initial: false
-      })
-      if (confirm) {
-        if (removeProject(name)) {
-          console.log(`Removed project "${name}"`)
-        } else {
-          console.error(`Project "${name}" not found`)
-        }
+      if (!argv.y) {
+        const { confirm } = await prompt({
+          type: 'confirm',
+          name: 'confirm',
+          message: `Remove project "${name}"?`,
+          initial: false
+        })
+        if (!confirm) return
+      }
+      if (removeProject(name)) {
+        console.log(`Removed project "${name}"`)
+      } else {
+        console.error(`Project "${name}" not found`)
       }
     }
   }

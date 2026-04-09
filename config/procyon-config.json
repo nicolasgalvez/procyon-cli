@@ -5,7 +5,7 @@
     "environments": [
       {
         "name": "staging",
-        "ssh": "staging-codebusters.kinsta.cloud",
+        "ssh": "stg-example.kinsta.cloud",
         "path": "public"
       }
     ]

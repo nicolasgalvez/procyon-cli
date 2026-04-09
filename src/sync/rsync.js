@@ -6,6 +6,19 @@ const { lookupSshHost } = require('../ssh-config')
 
 const DEFAULT_EXCLUDE_FILE = path.join(__dirname, '../../bin/rsync-exclude')
 
+class ConnectionError extends Error {
+  constructor (code) {
+    super(`Connection failed (rsync exited with code ${code})`)
+    this.name = 'ConnectionError'
+    this.exitCode = code
+  }
+}
+
+function rsyncError (code) {
+  if (code === 255) return new ConnectionError(code)
+  return new Error(`rsync exited with code ${code}`)
+}
+
 class RsyncTransfer {
   constructor (project, environment) {
     this.project = project
@@ -67,11 +80,15 @@ class RsyncTransfer {
    * Pull files from remote to local
    */
   async pull (remoteSub, localSub, options = {}) {
+    const excludeArgs = options.noDefaultExclude
+      ? (options.excludeArgs || [])
+      : this.buildExcludeArgs()
+
     const args = [
       '-chavzP',
       '--stats',
       '-e', this.buildSshCommand(),
-      ...this.buildExcludeArgs()
+      ...excludeArgs
     ]
 
     if (options.dryRun) args.push('--dry-run', '--itemize-changes')
@@ -93,11 +110,15 @@ class RsyncTransfer {
    * Push files from local to remote
    */
   async push (localSub, remoteSub, options = {}) {
+    const excludeArgs = options.noDefaultExclude
+      ? (options.excludeArgs || [])
+      : this.buildExcludeArgs()
+
     const args = [
       '-chavzP',
       '--stats',
       '-e', this.buildSshCommand(),
-      ...this.buildExcludeArgs()
+      ...excludeArgs
     ]
 
     if (options.dryRun) args.push('--dry-run', '--itemize-changes')
@@ -112,15 +133,23 @@ class RsyncTransfer {
   }
 
   /**
-   * Run rsync with --dry-run --itemize-changes and parse the output
+   * Run rsync with --dry-run --itemize-changes and parse the output.
+   * Direction is local→remote (push preview) by default.
+   * Set options.direction = 'pull' for remote→local.
+   * Set options.noDefaultExclude = true to skip the default exclude file.
+   * Set options.excludeArgs = [...] to use custom exclude args.
    */
   async dryRun (localSub, remoteSub, options = {}) {
+    const excludeArgs = options.noDefaultExclude
+      ? (options.excludeArgs || [])
+      : this.buildExcludeArgs()
+
     const args = [
       '-chavzP',
       '--dry-run',
       '--itemize-changes',
       '-e', this.buildSshCommand(),
-      ...this.buildExcludeArgs()
+      ...excludeArgs
     ]
 
     if (options.delete) args.push('--delete-after')
@@ -128,7 +157,11 @@ class RsyncTransfer {
     const local = ensureTrailingSlash(this.buildLocal(localSub))
     const remote = ensureTrailingSlash(this.buildRemote(remoteSub))
 
-    args.push(local, remote)
+    if (options.direction === 'pull') {
+      args.push(remote, local)
+    } else {
+      args.push(local, remote)
+    }
 
     return new Promise((resolve, reject) => {
       const child = spawn('rsync', args, { stdio: ['inherit', 'pipe', 'inherit'] })
@@ -140,7 +173,7 @@ class RsyncTransfer {
 
       child.on('close', (code) => {
         if (code !== 0) {
-          reject(new Error(`rsync exited with code ${code}`))
+          reject(rsyncError(code))
           return
         }
         resolve(parseItemizedChanges(output))
@@ -153,11 +186,10 @@ class RsyncTransfer {
   /**
    * Run an SSH command on the remote
    */
-  async ssh (command) {
+  async ssh (command, options = {}) {
     const { user, host, port, identityFile } = this.env
     const args = []
     if (this.hasSshAlias()) {
-      // Let SSH config handle user/port/key
       args.push(host, command)
     } else {
       args.push('-p', String(port || 22))
@@ -168,13 +200,20 @@ class RsyncTransfer {
     }
 
     return new Promise((resolve, reject) => {
-      const child = spawn('ssh', args, { stdio: 'inherit' })
+      const capture = options.capture
+      const child = spawn('ssh', args, { stdio: capture ? ['inherit', 'pipe', 'pipe'] : 'inherit' })
+      let stdout = ''
+
+      if (capture && child.stdout) {
+        child.stdout.on('data', (data) => { stdout += data.toString() })
+      }
+
       child.on('close', (code) => {
         if (code !== 0) {
           reject(new Error(`SSH command exited with code ${code}`))
           return
         }
-        resolve()
+        resolve(capture ? stdout : undefined)
       })
       child.on('error', reject)
     })
@@ -194,7 +233,7 @@ class RsyncTransfer {
 
       child.on('close', (code) => {
         if (code !== 0) {
-          reject(new Error(`rsync exited with code ${code}`))
+          reject(rsyncError(code))
           return
         }
         resolve(options.capture ? output : undefined)
@@ -250,4 +289,35 @@ function parseItemizedChanges (output) {
   return { added, modified, deleted }
 }
 
-module.exports = { RsyncTransfer, parseItemizedChanges, shellQuote }
+/**
+ * Print a human-readable diff summary.
+ * direction: 'push' (local overwrites remote) or 'pull' (remote overwrites local)
+ */
+function displayDiff (changes, direction = 'push') {
+  const arrow = direction === 'push' ? '⬆️' : '⬇️'
+  const target = direction === 'push' ? 'remote' : 'local'
+
+  if (changes.added.length === 0 && changes.modified.length === 0 && changes.deleted.length === 0) {
+    console.log('No changes.')
+    return false
+  }
+
+  console.log()
+  if (changes.added.length > 0) {
+    console.log(`  ${arrow}  New files (will be added to ${target}):`)
+    for (const f of changes.added) console.log(`       + ${f}`)
+  }
+  if (changes.modified.length > 0) {
+    console.log(`  ${arrow}  Modified files (will overwrite ${target}):`)
+    for (const f of changes.modified) console.log(`       ✏️  ${f}`)
+  }
+  if (changes.deleted.length > 0) {
+    console.log(`  🗑️  Deleted files (will be removed from ${target}):`)
+    for (const f of changes.deleted) console.log(`       - ${f}`)
+  }
+
+  console.log(`\n  ${changes.added.length} added, ${changes.modified.length} modified, ${changes.deleted.length} deleted`)
+  return true
+}
+
+module.exports = { RsyncTransfer, ConnectionError, parseItemizedChanges, displayDiff, shellQuote }

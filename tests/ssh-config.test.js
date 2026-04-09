@@ -8,17 +8,17 @@ const require = createRequire(import.meta.url)
 const { lookupSshHost } = require('../src/ssh-config')
 
 const fixtureConfig = `
-Host baywatertrail baywatertrail.wpenginepowered.com
-  Hostname baywatertrail.ssh.wpengine.net
-  User baywatertrail
+Host example-site example-site.wpenginepowered.com
+  Hostname example-site.ssh.wpengine.net
+  User example-site
   StrictHostKeyChecking no
-  IdentityFile ~/.ssh/simacc
+  IdentityFile ~/.ssh/id_rsa
   IdentitiesOnly yes
 
-Host sfbaywatertstg sfbaywatertstg.wpenginepowered.com
-  Hostname sfbaywatertstg.ssh.wpengine.net
-  User sfbaywatertstg
-  IdentityFile ~/.ssh/simacc
+Host example-staging example-staging.wpenginepowered.com
+  Hostname example-staging.ssh.wpengine.net
+  User example-staging
+  IdentityFile ~/.ssh/id_rsa
 
 Host myserver
   Hostname myserver.example.com
@@ -42,24 +42,24 @@ describe('lookupSshHost', () => {
   fs.writeFileSync(configPath, fixtureConfig)
 
   it('resolves a WPE host alias', () => {
-    const result = lookupSshHost('baywatertrail', configPath)
+    const result = lookupSshHost('example-site', configPath)
     expect(result).not.toBeNull()
-    expect(result.hostname).toBe('baywatertrail.ssh.wpengine.net')
-    expect(result.user).toBe('baywatertrail')
-    expect(result.identityFile).toBe('~/.ssh/simacc')
+    expect(result.hostname).toBe('example-site.ssh.wpengine.net')
+    expect(result.user).toBe('example-site')
+    expect(result.identityFile).toBe('~/.ssh/id_rsa')
   })
 
   it('resolves the second alias for the same host', () => {
-    const result = lookupSshHost('baywatertrail.wpenginepowered.com', configPath)
+    const result = lookupSshHost('example-site.wpenginepowered.com', configPath)
     expect(result).not.toBeNull()
-    expect(result.user).toBe('baywatertrail')
+    expect(result.user).toBe('example-site')
   })
 
   it('resolves staging host', () => {
-    const result = lookupSshHost('sfbaywatertstg', configPath)
+    const result = lookupSshHost('example-staging', configPath)
     expect(result).not.toBeNull()
-    expect(result.hostname).toBe('sfbaywatertstg.ssh.wpengine.net')
-    expect(result.user).toBe('sfbaywatertstg')
+    expect(result.hostname).toBe('example-staging.ssh.wpengine.net')
+    expect(result.user).toBe('example-staging')
   })
 
   it('resolves host with custom port', () => {

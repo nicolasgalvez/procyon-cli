@@ -112,4 +112,75 @@ describe('config store', () => {
     })
   })
 
+  describe('addEnvironment', () => {
+    it('adds a new environment to an existing project', () => {
+      store.saveProject('test-site', validConfig)
+      store.addEnvironment('test-site', 'live', {
+        host: 'live.example.com',
+        user: 'deploy',
+        port: 22,
+        path: '/var/www/html'
+      })
+      const project = store.getProject('test-site')
+      expect(project.environments.live).toBeDefined()
+      expect(project.environments.live.host).toBe('live.example.com')
+      expect(project.environments.staging).toBeDefined()
+    })
+
+    it('throws if environment already exists', () => {
+      store.saveProject('test-site', validConfig)
+      expect(() => store.addEnvironment('test-site', 'staging', {
+        host: 'x', user: 'x', path: '/x'
+      })).toThrow('already exists')
+    })
+
+    it('throws if project not found', () => {
+      store.ensureConfigDir()
+      expect(() => store.addEnvironment('nope', 'live', {
+        host: 'x', user: 'x', path: '/x'
+      })).toThrow('not found')
+    })
+  })
+
+  describe('updateEnvironment', () => {
+    it('merges updates into an existing environment', () => {
+      store.saveProject('test-site', validConfig)
+      store.updateEnvironment('test-site', 'staging', { port: 2222, domain: 'staging.example.com' })
+      const env = store.getProject('test-site').environments.staging
+      expect(env.port).toBe(2222)
+      expect(env.domain).toBe('staging.example.com')
+      expect(env.host).toBe('staging.example.com')
+      expect(env.user).toBe('deploy')
+    })
+
+    it('throws if environment does not exist', () => {
+      store.saveProject('test-site', validConfig)
+      expect(() => store.updateEnvironment('test-site', 'live', { port: 22 }))
+        .toThrow('not found')
+    })
+  })
+
+  describe('removeEnvironment', () => {
+    it('removes an environment from a project', () => {
+      const config = {
+        ...validConfig,
+        environments: {
+          ...validConfig.environments,
+          live: { host: 'live.example.com', user: 'deploy', port: 22, path: '/var/www/html' }
+        }
+      }
+      store.saveProject('test-site', config)
+      store.removeEnvironment('test-site', 'staging')
+      const project = store.getProject('test-site')
+      expect(project.environments.staging).toBeUndefined()
+      expect(project.environments.live).toBeDefined()
+    })
+
+    it('throws if environment does not exist', () => {
+      store.saveProject('test-site', validConfig)
+      expect(() => store.removeEnvironment('test-site', 'nope'))
+        .toThrow('not found')
+    })
+  })
+
 })

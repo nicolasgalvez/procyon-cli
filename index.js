@@ -11,7 +11,7 @@ const log = (argv, message) => {
 }
 
 // Commands that don't need any config loaded
-const CONFIG_FREE_COMMANDS = ['init', 'migrate', 'projects']
+const CONFIG_FREE_COMMANDS = ['init', 'migrate', 'projects', 'env']
 
 const argv = yargs(process.argv.slice(2)) // eslint-disable-line no-unused-vars
   .scriptName('procyon')
